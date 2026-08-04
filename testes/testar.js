@@ -57,8 +57,10 @@ const ctxGlobal = {
     querySelector: elFalso,
     querySelectorAll: () => [],
     addEventListener: noop,
+    documentElement: elFalso('html'),
     title: '',
   },
+  localStorage: { getItem: () => null, setItem: noop },
   window: {
     addEventListener: noop,
     matchMedia: () => ({ matches: false, addEventListener: noop }),

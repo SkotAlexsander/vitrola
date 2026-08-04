@@ -1,8 +1,9 @@
 /* ============================================================================
    VITROLA — folha de estilo
 
-   Tema escuro, único, assumido. Verde-limão é a ÚNICA cor de ação: tocar,
-   filtro ativo, progresso, curtida. Todo o resto é preto e cinza.
+   Dois temas, escuro e claro, escolhidos no menu. Verde-limão é a ÚNICA
+   cor de ação nos dois: tocar, filtro ativo, progresso, curtida. Todo o
+   resto é preto e cinza — ou branco e cinza.
 
    A cor da capa não some — ela vive no BRILHO do fundo, ampliada e
    desfocada atrás do disco. Assim o álbum ilumina o ambiente sem disputar
@@ -24,16 +25,36 @@
   --t-xl: 1.375rem;   /* 22 — título da tela de biblioteca */
   --t-faixa: clamp(1.5rem, 6.5vw, 1.875rem);
 
-  /* -- cor -- */
-  --fundo:      #0B0B0D;
-  --superficie: #1A1A1E;
-  --superficie2:#26262B;
-  --texto:      #FFFFFF;
-  --fraco:      #9C9CA5;
-  --tenue:      #74747D;
-  --lima:       #CDEB45;
-  --lima-fosca: #A9C233;
+  /* -- cor: escuro é o padrão -----------------------------------------
 
+     Dois tokens de limão, e o motivo é medida, não gosto:
+
+       --lima        preenchimento. Sempre o mesmo verde vivo, com texto
+                     escuro em cima — funciona nos dois temas.
+       --lima-tinta  quando o limão é a TINTA (ícone curtido, título da
+                     faixa que toca, barra de progresso). Sobre fundo
+                     claro o verde vivo mede 1,4:1 e some; no tema claro
+                     este token escurece até passar no contraste.       */
+  --fundo:       #0B0B0D;
+  --superficie:  #1A1A1E;
+  --superficie2: #26262B;
+  --texto:       #FFFFFF;
+  --fraco:       #9C9CA5;
+  --tenue:       #7E7E88;
+  --lima:        #CDEB45;
+  --lima-clara:  #DBF562;
+  --lima-tinta:  #CDEB45;
+  --sobre-lima:  #10130A;
+  --vidro:       rgb(255 255 255 / .10);
+  --vidro-alto:  rgb(255 255 255 / .18);
+  --fio:         rgb(255 255 255 / .16);
+  --realce:      rgb(255 255 255 / .05);
+  --moldura:     #08080A;
+  --brilho-op:   .55;
+  --sombra:      0 24px 60px rgb(0 0 0 / .55);
+  --sombra-mini: 0 12px 34px rgb(0 0 0 / .5);
+
+  /* -- o que não muda com o tema -- */
   --r-pill: 999px;
   --r-card: 14px;
 
@@ -45,6 +66,30 @@
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 
   --largura: 460px;          /* é um app de celular, também no computador */
+}
+
+/* -- claro: mesma estrutura, outros valores. Nada de inverter na marra:
+      cada par frente/fundo foi medido de novo. -------------------------- */
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --fundo:       #F4F5F7;
+  --superficie:  #E6E8EC;
+  --superficie2: #DADDE3;
+  --texto:       #14151A;
+  --fraco:       #4E525B;
+  --tenue:       #5F636D;
+  --lima:        #CDEB45;
+  --lima-clara:  #DBF562;
+  --lima-tinta:  #4A6300;
+  --sobre-lima:  #10130A;
+  --vidro:       rgb(0 0 0 / .07);
+  --vidro-alto:  rgb(0 0 0 / .13);
+  --fio:         rgb(0 0 0 / .18);
+  --realce:      rgb(0 0 0 / .04);
+  --moldura:     #E4E6EA;
+  --brilho-op:   .28;
+  --sombra:      0 20px 46px rgb(20 21 26 / .18);
+  --sombra-mini: 0 10px 26px rgb(20 21 26 / .16);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -74,7 +119,7 @@ body {
 }
 
 :where(button, [href], input, [tabindex]):focus-visible {
-  outline: 2px solid var(--lima);
+  outline: 2px solid var(--lima-tinta);
   outline-offset: 3px;
   border-radius: 6px;
 }
@@ -99,7 +144,7 @@ svg path, svg circle {
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 38%, transparent 100%);
           mask-image: linear-gradient(to bottom, #000 0%, #000 38%, transparent 100%);
 }
-.brilho.aceso { opacity: .55; }
+.brilho.aceso { opacity: var(--brilho-op); }
 
 .brilho img {
   position: absolute;
@@ -165,18 +210,18 @@ svg path, svg circle {
   width: 40px; height: 40px;
   display: grid; place-items: center;
   border: 0; border-radius: 50%;
-  background: rgb(255 255 255 / .10);
+  background: var(--vidro);
   backdrop-filter: blur(12px);
   color: var(--texto);
   cursor: pointer;
   transition: background var(--rapido), scale var(--rapido), color var(--rapido);
 }
-.redondo:hover { background: rgb(255 255 255 / .18); }
+.redondo:hover { background: var(--vidro-alto); }
 .redondo:active { scale: .94; }
 .redondo svg { width: 19px; height: 19px; }
 
-#btn-curtir[aria-pressed="true"] { color: var(--lima); }
-#btn-curtir[aria-pressed="true"] .coracao path { fill: var(--lima); }
+#btn-curtir[aria-pressed="true"] { color: var(--lima-tinta); }
+#btn-curtir[aria-pressed="true"] .coracao path { fill: var(--lima-tinta); }
 
 /* --------------------------------------------------------------- menu */
 
@@ -190,7 +235,7 @@ svg path, svg circle {
   padding: var(--e1);
   display: flex; flex-direction: column;
   min-width: 220px;
-  box-shadow: 0 18px 40px rgb(0 0 0 / .55);
+  box-shadow: var(--sombra);
 }
 .menu-item {
   font: inherit; font-size: var(--t-md);
@@ -200,7 +245,7 @@ svg path, svg circle {
   border-radius: 10px;
   cursor: pointer;
 }
-.menu-item:hover { background: rgb(255 255 255 / .07); }
+.menu-item:hover { background: var(--realce); }
 
 /* --------------------------------------------------------------- chips */
 
@@ -233,7 +278,7 @@ svg path, svg circle {
 .chip:active { scale: .96; }
 .chip[aria-pressed="true"] {
   background: var(--lima);
-  color: #10130A;
+  color: var(--sobre-lima);
   font-weight: 600;
 }
 
@@ -276,7 +321,7 @@ svg path, svg circle {
   cursor: pointer;
   transition: background var(--rapido), scale var(--rapido);
 }
-.item:hover { background: rgb(255 255 255 / .05); }
+.item:hover { background: var(--realce); }
 .item:active { scale: .985; }
 
 .item-capa {
@@ -318,16 +363,16 @@ svg path, svg circle {
 .item-play svg path { fill: currentColor; stroke: none; }
 
 /* a que toca: limão E um traço, porque cor sozinha nunca basta */
-.item[aria-current="true"] { background: rgb(205 235 69 / .07); }
-.item[aria-current="true"] .item-tit { color: var(--lima); }
-.item[aria-current="true"] .item-play { background: var(--lima); color: #10130A; }
+.item[aria-current="true"] { background: color-mix(in srgb, var(--lima-tinta) 11%, transparent); }
+.item[aria-current="true"] .item-tit { color: var(--lima-tinta); }
+.item[aria-current="true"] .item-play { background: var(--lima); color: var(--sobre-lima); }
 
-.item-curtida {
+.item-curtida { /* limão como tinta: escurece no tema claro */
   width: 13px; height: 13px;
   display: inline-block;
   vertical-align: -1px;
   margin-inline-end: 5px;
-  color: var(--lima);
+  color: var(--lima-tinta);
 }
 .item-curtida path { fill: currentColor; stroke: none; }
 
@@ -350,7 +395,7 @@ svg path, svg circle {
   font: inherit;
   font-size: var(--t-md);
   font-weight: 600;
-  color: #10130A;
+  color: var(--sobre-lima);
   background: var(--lima);
   border: 0;
   border-radius: var(--r-pill);
@@ -359,12 +404,12 @@ svg path, svg circle {
   cursor: pointer;
   transition: scale var(--rapido), background var(--rapido);
 }
-.botao-lima:hover { background: #DBF562; }
+.botao-lima:hover { background: var(--lima-clara); }
 .botao-lima:active { scale: .96; }
 
 .d-borda { fill: none; stroke: var(--tenue); stroke-width: 1.4; }
 .d-sulco { fill: none; stroke: var(--tenue); stroke-width: .8; opacity: .7; }
-.d-selo  { fill: var(--lima); stroke: none; }
+.d-selo  { fill: var(--lima-tinta); stroke: none; }
 .d-furo  { fill: var(--fundo); stroke: none; }
 
 /* --------------------------------------------------------- mini player */
@@ -380,9 +425,9 @@ svg path, svg circle {
   gap: var(--e3);
   padding: var(--e2);
   border-radius: var(--r-pill);
-  background: rgb(38 38 43 / .82);
+  background: color-mix(in srgb, var(--superficie2) 84%, transparent);
   backdrop-filter: blur(20px);
-  box-shadow: 0 12px 34px rgb(0 0 0 / .5);
+  box-shadow: var(--sombra-mini);
 }
 .mini-capa {
   width: 44px; height: 44px;
@@ -427,7 +472,7 @@ svg path, svg circle {
   overflow: hidden;
   flex: none;
   background: var(--superficie);
-  box-shadow: 0 24px 60px rgb(0 0 0 / .55);
+  box-shadow: var(--sombra);
 }
 .bolacha img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .bolacha-vazia { position: absolute; inset: 14%; }
@@ -489,16 +534,16 @@ svg path, svg circle {
   border-radius: 2px;
   pointer-events: none;
 }
-.trilho-fundo { inset-inline: 0; background: rgb(255 255 255 / .16); }
-.trilho-cheio { inset-inline-start: 0; width: 0; background: var(--lima); }
+.trilho-fundo { inset-inline: 0; background: var(--fio); }
+.trilho-cheio { inset-inline-start: 0; width: 0; background: var(--lima-tinta); }
 .trilho-bola {
   position: absolute;
   width: 12px; height: 12px;
   border-radius: 50%;
-  background: var(--lima);
+  background: var(--lima-tinta);
   transform: translateX(-50%);
   pointer-events: none;
-  box-shadow: 0 0 0 4px rgb(205 235 69 / .18);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lima-tinta) 22%, transparent);
 }
 
 .tempos {
@@ -533,7 +578,7 @@ svg path, svg circle {
 .t-plano { width: 44px; height: 44px; background: none; color: var(--fraco); }
 .t-plano:hover { color: var(--texto); }
 .t-plano svg { width: 20px; height: 20px; }
-.t-plano[aria-pressed="true"] { color: var(--lima); }
+.t-plano[aria-pressed="true"] { color: var(--lima-tinta); }
 
 .t-cinza { width: 52px; height: 52px; background: var(--superficie2); }
 .t-cinza svg { width: 20px; height: 20px; }
@@ -543,10 +588,10 @@ svg path, svg circle {
 .t-lima {
   width: 68px; height: 68px;
   background: var(--lima);
-  color: #10130A;
-  box-shadow: 0 10px 28px rgb(205 235 69 / .26);
+  color: var(--sobre-lima);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--lima) 30%, transparent);
 }
-.t-lima:hover { background: #DBF562; }
+.t-lima:hover { background: var(--lima-clara); }
 .t-lima svg { width: 26px; height: 26px; }
 .t-lima svg path { fill: currentColor; stroke: none; }
 #icone-pausa path { fill: none; stroke: currentColor; stroke-width: 2.6; }
@@ -557,15 +602,15 @@ svg path, svg circle {
 .cortina {
   position: fixed; inset: 0; z-index: 50;
   display: grid; place-items: center;
-  background: rgb(11 11 13 / .9);
+  background: color-mix(in srgb, var(--fundo) 92%, transparent);
   backdrop-filter: blur(4px);
 }
 .cortina p {
   margin: 0;
   font-size: clamp(1.2rem, 5vw, 1.8rem);
   font-weight: 700;
-  color: var(--lima);
-  border: 2px dashed var(--lima);
+  color: var(--lima-tinta);
+  border: 2px dashed var(--lima-tinta);
   border-radius: var(--r-card);
   padding: clamp(28px, 7vw, 56px) clamp(32px, 9vw, 72px);
   text-align: center;
@@ -581,10 +626,10 @@ svg path, svg circle {
     border-radius: 28px;
     overflow: hidden;
     box-shadow: 0 30px 80px rgb(0 0 0 / .6);
-    outline: 1px solid rgb(255 255 255 / .07);
+    outline: 1px solid var(--vidro);
     outline-offset: -1px;
   }
-  body { background: #08080A; }
+  body { background: var(--moldura); }
 }
 
 /* ------------------------------------------------------------- respeito */

@@ -571,6 +571,29 @@ function fecharMenu() {
   $('btn-menu').setAttribute('aria-expanded', 'false');
 }
 
+/* ---- tema: escuro e claro, à escolha ----
+   O verde-limão não muda de valor quando é PREENCHIMENTO (com texto
+   escuro em cima ele funciona nos dois). Como TINTA ele muda: sobre
+   fundo claro o verde vivo mede 1,4:1 e some. Quem cuida disso é o
+   token --lima-tinta, no CSS. */
+function temaAtual() {
+  return document.documentElement.getAttribute('data-tema') === 'claro' ? 'claro' : 'escuro';
+}
+
+function aplicarTema(t) {
+  if (t === 'claro') document.documentElement.setAttribute('data-tema', 'claro');
+  else document.documentElement.removeAttribute('data-tema');
+
+  const rot = $('rotulo-tema');
+  if (rot) rot.textContent = t === 'claro' ? 'claro' : 'escuro';
+
+  // a barra de status do sistema acompanha o fundo
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'claro' ? '#F4F5F7' : '#0B0B0D');
+
+  try { localStorage.setItem('vitrola:tema', t); } catch (_) {}
+}
+
 const D_CORACAO = 'M12 20.5S3.5 15 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 5.8-8.5 11.3-8.5 11.3z';
 const D_DISCO   = 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 7.2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z';
 
@@ -954,6 +977,11 @@ $('btn-aleatorio').addEventListener('click', e => {
   avisar(estado.aleatorio ? 'Ordem aleatória ligada' : 'Ordem aleatória desligada');
 });
 
+$('btn-tema').addEventListener('click', () => {
+  aplicarTema(temaAtual() === 'claro' ? 'escuro' : 'claro');
+  avisar('Tema ' + temaAtual());
+});
+
 $('btn-embaralhar-tudo').addEventListener('click', () => {
   if (!estado.fila.length) return;
   estado.aleatorio = true;
@@ -1095,6 +1123,10 @@ function quadro(agora) {
 
 /* --- arranque --- */
 (function iniciar() {
+  let salvo = null;
+  try { salvo = localStorage.getItem('vitrola:tema'); } catch (_) {}
+  aplicarTema(salvo === 'claro' ? 'claro' : 'escuro');
+
   ligarControlesDoSistema();
   irPara('biblioteca');
   pintarLista();

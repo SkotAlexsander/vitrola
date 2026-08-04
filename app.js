@@ -734,6 +734,41 @@ window.__midia = function (qual, argumento) {
   contarAoSistema(true);
 };
 
+/* ---- diagnóstico ----
+   O card da tela de bloqueio é feito de peças que só existem do lado
+   Android, e quando uma falha ela falha CALADA: some o card e ninguém diz
+   por quê. Metade da resposta só o Java sabe (permissão, serviço, sessão);
+   a outra metade só a página sabe (se a ponte existe, se algo foi mandado,
+   se o áudio subiu). Aqui as duas se juntam.
+
+   Sai por window.alert de propósito: no aplicativo o diálogo é nativo, e
+   ver esse diálogo já é meia resposta — prova que a ponte de volta funciona. */
+function relatorio() {
+  const p = ponteDoSistema();
+  const linhas = [];
+
+  if (p && typeof p.diagnostico === 'function') {
+    try { linhas.push(p.diagnostico()); } catch (_) { linhas.push('o Java não respondeu'); }
+  } else {
+    linhas.push('Rodando no NAVEGADOR, não no aplicativo.\n' +
+                'A tela de bloqueio aqui é do navegador, não da Vitrola.\n');
+  }
+
+  linhas.push('ponte com o sistema: ' + (p ? 'existe' : 'não existe'));
+  linhas.push('recados já enviados: ' + (ultimoRecado ? 'sim' : 'NENHUM'));
+
+  const f = faixaAtual();
+  linhas.push('faixa atual: ' + (f ? f.tags.titulo : 'nenhuma'));
+  linhas.push('capa para o card: ' + (!f ? '—'
+    : f.capaAviso ? 'pronta' : (f.capaURL ? 'a faixa tem capa, mas não converteu' : 'a faixa não tem capa')));
+  linhas.push('fila: ' + estado.fila.length + ' faixas');
+  linhas.push('som: ' + (som.paused ? 'pausado' : 'tocando') +
+              (som.src ? '' : ', sem arquivo carregado'));
+  linhas.push('web audio: ' + (ac ? 'ligado' : (audioDesistiu ? 'DESISTIU' : 'ainda não')));
+
+  return linhas.join('\n');
+}
+
 
 /* ===========================================================================
    9. TELAS E DESENHO
@@ -1252,6 +1287,15 @@ $('btn-limpar').addEventListener('click', async () => {
   pintarLista(); pintarAgora(); pintarBotaoTocar(); pintarProgresso();
   contarAoSistema(true);          // sem faixa, isso tira o card da tela de bloqueio
   avisar('Biblioteca esvaziada.');
+});
+
+/* Só existe dentro do aplicativo: no navegador não há tela de bloqueio
+   própria para diagnosticar, e o item viraria enfeite. */
+mostrar($('btn-diagnostico'), !!ponteDoSistema());
+$('btn-diagnostico').addEventListener('click', () => {
+  fecharMenu();
+  const texto = relatorio();
+  try { window.alert(texto); } catch (_) { avisar(texto.replace(/\n/g, ' · ')); }
 });
 
 /* --- progresso --- */

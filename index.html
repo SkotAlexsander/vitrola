@@ -57,6 +57,11 @@
       <button type="button" class="menu-item" id="btn-embaralhar-tudo">Tocar tudo embaralhado</button>
       <button type="button" class="menu-item" id="btn-tema">Tema: <span id="rotulo-tema">escuro</span></button>
       <button type="button" class="menu-item" id="btn-limpar">Esvaziar a biblioteca</button>
+      <!-- Só aparece dentro do aplicativo Android. A tela de bloqueio é
+           feita de peças que só existem lá, e quando uma falha ela falha
+           calada: isto faz o aplicativo dizer em que pé está, em vez de
+           adivinharmos por tentativa. -->
+      <button type="button" class="menu-item" id="btn-diagnostico" hidden>Diagnóstico</button>
     </div>
 
     <nav class="chips" id="chips" aria-label="Filtrar">

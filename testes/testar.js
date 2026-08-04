@@ -74,7 +74,7 @@ vm.createContext(ctxGlobal);
 let src = fs.readFileSync(ARQ, 'utf8');
 src += `
 ;globalThis.__t = { lerEtiquetas, lerID3v2, lerID3v1, sincroSeguro, tempo, decodificar,
-                    contarEstranhos, estado, som, contarAoSistema, faixaAtual };`;
+                    contarEstranhos, estado, som, contarAoSistema, faixaAtual, relatorio };`;
 vm.runInContext(src, ctxGlobal, { filename: 'app.js' });
 const T = ctxGlobal.__t;
 
@@ -354,6 +354,41 @@ console.log('\n[9] a ponte da tela de bloqueio');
   ok(!/case 'abaixar'|case 'levantar'/.test(fonte),
      'nao ha comando de foco de audio na ponte');
   ok(!/requestAudioFocus/.test(fonte), 'e o app nao pede foco de audio');
+}
+
+console.log('\n[10] o diagnostico');
+{
+  // Um diagnostico que quebra e pior que nenhum: quebra justamente na hora
+  // em que algo ja esta errado, e ainda esconde o que era.
+  ctxGlobal.window.Sistema = null;
+  let semPonte = null;
+  try { semPonte = T.relatorio(); } catch (e) { semPonte = 'LANCOU: ' + e.message; }
+  ok(typeof semPonte === 'string' && semPonte.indexOf('LANCOU') < 0,
+     'sem ponte nenhuma, nao lanca');
+  ok(/NAVEGADOR/.test(semPonte), 'e diz que esta no navegador, nao no aplicativo');
+
+  // o Java existindo mas explodindo tambem nao pode derrubar
+  ctxGlobal.window.Sistema = {
+    midia: () => {},
+    diagnostico: () => { throw new Error('boom'); },
+  };
+  let comJavaQuebrado = null;
+  try { comJavaQuebrado = T.relatorio(); } catch (e) { comJavaQuebrado = 'LANCOU: ' + e.message; }
+  ok(typeof comJavaQuebrado === 'string' && comJavaQuebrado.indexOf('LANCOU') < 0,
+     'o Java explodindo nao derruba o relatorio');
+  ok(/n.o respondeu/.test(comJavaQuebrado), 'e o relatorio conta que ele explodiu');
+
+  // e o caso normal
+  ctxGlobal.window.Sistema = {
+    midia: () => {},
+    diagnostico: () => 'Vitrola 2.1.2\npermissao de notificacao: concedida',
+  };
+  const bom = T.relatorio();
+  ok(/permissao de notificacao: concedida/.test(bom), 'repassa o que o Java disse');
+  ok(/ponte com o sistema: existe/.test(bom), 'e soma o que so a pagina sabe');
+  ok(/fila: \d+ faixas/.test(bom), 'inclusive o tamanho da fila');
+
+  ctxGlobal.window.Sistema = null;
 }
 
 console.log('\n' + (falhas === 0 ? 'TUDO PASSOU' : `${falhas} FALHA(S)`));

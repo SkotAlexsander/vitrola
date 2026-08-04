@@ -23,11 +23,11 @@ O aplicativo Android roda **inteiro dentro do aparelho** e **não pede permissã
 
 No celular, o navegador oferece instalar na tela inicial. Aí ela abre em tela cheia, funciona sem rede e aparece na folha de compartilhamento junto dos outros aplicativos.
 
-![A Vitrola no tema escuro, com a fila vazia](capturas/desktop-escuro.png)
+![A biblioteca no tema escuro: capa, título, artista, o lápis para corrigir o nome e o botão de tocar](capturas/biblioteca.png)
 
-| Tema claro | No celular |
+| Tema claro | Tocando |
 |---|---|
-| ![Tema claro](capturas/desktop-claro.png) | ![No celular](capturas/celular.png) |
+| ![A mesma biblioteca no tema claro](capturas/claro.png) | ![A tela de reprodução, com a capa e a letra](capturas/tocando.png) |
 
 | Arquivo | O que é |
 |---|---|
@@ -114,6 +114,14 @@ O `<audio>` continua morando no JavaScript; o Java não toca em som nenhum. O qu
 > Quem é dono do som é dono do foco. Há um teste que falha se `requestAudioFocus` voltar ao código, porque esse é o tipo de coisa que se reintroduz por boa intenção.
 
 > A ponte tem freio: o `timeupdate` dispara quatro vezes por segundo, e mandar tudo isso seria desperdício. A barra da tela de bloqueio anda sozinha, extrapolando da posição e da velocidade — só preciso corrigir de cinco em cinco segundos, e na hora exata em que algo muda de repente.
+
+### Um diagnóstico, porque o Android falha calado
+
+No menu do aplicativo há um item **Diagnóstico** — escondido no navegador, onde não faria sentido.
+
+Ele existe por uma razão prática: o card da tela de bloqueio depende de três peças que só existem do lado Android — a permissão de notificação, o serviço de primeiro plano e a sessão de mídia — e quando uma falha, ela falha *em silêncio*. Some o card, e nada diz por quê. São três consertos diferentes, e sem saber qual, a única saída seria compilar uma versão nova a cada palpite.
+
+O relatório junta o que só o Java sabe (permissão, serviço, sessão, versão do Android) com o que só a página sabe (se a ponte existe, se algum recado saiu, se o áudio subiu). Sai por `alert`, de propósito: no aplicativo isso abre um diálogo nativo, e **ver esse diálogo já é meia resposta** — prova que o caminho de volta do Java para a página funciona.
 
 ### Consertar o nome na mão
 

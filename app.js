@@ -41,10 +41,10 @@ const menosMovimento = window.matchMedia &&
 const medidas = new Map();
 let medidasVencidas = true;
 
-function encaixarCanvas(cv) {
+function encaixarCanvas(cv, escala) {
   let m = medidas.get(cv);
   if (!m || medidasVencidas) {
-    const d = Math.min(window.devicePixelRatio || 1, 2);
+    const d = Math.min(window.devicePixelRatio || 1, 2) * (escala || 1);
     const r = cv.getBoundingClientRect();
     m = {
       ctx: cv.getContext('2d'),
@@ -646,9 +646,118 @@ function desenharEspectro() {
   ctx.stroke();
 }
 
-let laco = 0;
-function quadro() {
+/* --------------------------------------------------- o disco de fundo
+
+   Três camadas de sulcos concêntricos, cada uma girando a uma velocidade
+   diferente. É daí que vem a profundidade: o que está mais longe gira mais
+   devagar, é mais fino e mais apagado — o mesmo truque de paralaxe de um
+   cenário pintado.
+
+   Os anéis não são círculos perfeitos: o raio ondula ao longo do ângulo, e
+   a amplitude dessa onda vem do espectro. Círculo perfeito girando não
+   parece girar — precisa da deformação para o olho perceber o movimento.  */
+
+const cvFundo = $('fundo');
+const eco = { grave: 0, medio: 0, agudo: 0, giro: 0 };
+let centroFundo = null;
+
+function energiaDe(dados, de, ate) {
+  let soma = 0, n = 0;
+  const fim = Math.min(Math.floor(ate), dados.length);
+  for (let i = Math.floor(de); i < fim; i++) { soma += dados[i]; n++; }
+  return n ? (soma / n) / 255 : 0;
+}
+
+/* O disco gira em torno da capa, não do meio da tela: é a capa que é o
+   assunto, e centrar ali amarra o fundo ao conteúdo. */
+function centroDoDisco(l, a, d) {
+  if (centroFundo) return centroFundo;
+  const capa = $('capa').getBoundingClientRect();
+  centroFundo = capa.width
+    ? { x: (capa.left + capa.width / 2) * d, y: (capa.top + capa.height / 2) * d }
+    : { x: l / 2, y: a / 2 };
+  return centroFundo;
+}
+
+const CAMADAS = [
+  { aneis: 16, r0: 0.10, r1: 0.72, giro:  1.00, alfa: 0.26, esp: 1.5, onda: 1.00, lados: 48 },
+  { aneis: 11, r0: 0.30, r1: 1.05, giro: -0.52, alfa: 0.15, esp: 1.1, onda: 0.62, lados: 40 },
+  { aneis:  7, r0: 0.60, r1: 1.55, giro:  0.26, alfa: 0.08, esp: 0.8, onda: 0.34, lados: 32 },
+];
+
+function desenharFundo(dt) {
+  // resolução reduzida de propósito: é imagem macia, ninguém vê o pixel,
+  // e são três camadas desenhando a cada quadro
+  const { ctx, l, a, d } = encaixarCanvas(cvFundo, 0.72);
+  ctx.clearRect(0, 0, l, a);
+  if (menosMovimento) return;
+
+  let g = 0, m = 0, ag = 0;
+  if (analisador && espectroDados && !som.paused) {
+    analisador.getByteFrequencyData(espectroDados);
+    const n = espectroDados.length;
+    g  = energiaDe(espectroDados, 0, n * 0.05);
+    m  = energiaDe(espectroDados, n * 0.05, n * 0.22);
+    ag = energiaDe(espectroDados, n * 0.22, n * 0.55);
+  }
+
+  // sobe depressa, desce devagar: é assim que o ouvido sente o som, e sem
+  // isso o fundo treme em vez de pulsar
+  const sub = 0.30, desc = 0.05;
+  eco.grave += (g  - eco.grave) * (g  > eco.grave ? sub : desc);
+  eco.medio += (m  - eco.medio) * (m  > eco.medio ? sub : desc);
+  eco.agudo += (ag - eco.agudo) * (ag > eco.agudo ? sub : desc);
+  eco.giro  += dt * (0.05 + eco.grave * 0.22);
+
+  const c = centroDoDisco(l, a, d);
+  const base = Math.hypot(l, a) * 0.5;
+
+  const raio = base * (0.55 + eco.grave * 0.25);
+  const brilho = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, raio);
+  brilho.addColorStop(0,    corAcento(0.13 + eco.grave * 0.12));
+  brilho.addColorStop(0.45, corAcento(0.045));
+  brilho.addColorStop(1,    corAcento(0));
+  ctx.fillStyle = brilho;
+  ctx.fillRect(0, 0, l, a);
+
+  for (const cam of CAMADAS) {
+    const fase = eco.giro * cam.giro;
+    for (let i = 0; i < cam.aneis; i++) {
+      const t = cam.aneis === 1 ? 0 : i / (cam.aneis - 1);
+      const R = base * (cam.r0 + (cam.r1 - cam.r0) * t);
+      const amp  = R * 0.045 * cam.onda * (0.25 + eco.medio * 1.6);
+      const amp2 = R * 0.022 * cam.onda * eco.agudo * 1.4;
+
+      ctx.beginPath();
+      for (let k = 0; k <= cam.lados; k++) {
+        const th = (k / cam.lados) * Math.PI * 2;
+        const r = R + Math.sin(th * 3 + fase + i * 0.4) * amp
+                    + Math.sin(th * 7 - fase * 1.7 + i * 0.9) * amp2;
+        const x = c.x + Math.cos(th) * r;
+        const y = c.y + Math.sin(th) * r;
+        k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.closePath();
+      const some = 1 - t * 0.65;
+      ctx.strokeStyle = corAcento(cam.alfa * some * (0.5 + eco.grave * 0.7));
+      ctx.lineWidth = Math.max(0.5, cam.esp * d * some);
+      ctx.stroke();
+    }
+  }
+}
+
+let laco = 0, marcaAnterior = 0, conta = 0;
+
+function quadro(agora) {
   laco = requestAnimationFrame(quadro);
+  const dt = marcaAnterior ? Math.min(0.1, (agora - marcaAnterior) / 1000) : 0.016;
+  marcaAnterior = agora;
+  conta++;
+
+  // parado, o fundo só precisa respirar — um quadro a cada três poupa
+  // bateria sem que ninguém perceba
+  if (!som.paused || conta % 3 === 0) desenharFundo(dt);
+
   if (!som.paused || estado.arrastando) desenharOnda();
   if (!som.paused && !menosMovimento) desenharEspectro();
   medidasVencidas = false;      // já foi medido neste quadro; vale até redimensionar
@@ -1162,6 +1271,7 @@ window.addEventListener('resize', () => {
   clearTimeout(debounce);
   debounce = setTimeout(() => {
     medidasVencidas = true;
+    centroFundo = null;         // a capa mudou de lugar; o disco tem de segui-la
     desenharOnda();
     desenharEspectro();
   }, 120);

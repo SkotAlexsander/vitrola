@@ -33,6 +33,11 @@
 </head>
 <body>
 
+<!-- O fundo é o disco: sulcos concêntricos que ondulam com os graves,
+     girando devagar, em três profundidades. Decorativo — fica fora da
+     árvore de acessibilidade e some sob movimento reduzido. -->
+<canvas id="fundo" class="fundo" aria-hidden="true"></canvas>
+
 <div class="app" id="app">
 
   <header class="cabeca">
@@ -129,10 +134,12 @@
       <ol class="fila" id="fila"></ol>
 
       <div class="encarte-vazio" id="encarte-vazio">
-        <p><strong>A fila está vazia.</strong></p>
-        <p>Arraste seus arquivos de áudio para qualquer lugar desta página, ou escolha
-           pelo botão. Nada sai do seu computador — não há servidor. As etiquetas, a
-           capa e a cor são lidas do próprio arquivo, aqui no navegador.</p>
+        <p><strong>Escolha suas músicas uma vez só.</strong></p>
+        <p>No seletor dá para marcar várias de uma vez — ou a pasta inteira. Elas ficam
+           guardadas <em>neste aparelho</em>: da próxima vez que você abrir, já estarão
+           aqui, é só tocar.</p>
+        <p>Nada é enviado para lugar nenhum. As etiquetas, a capa e a cor saem do
+           próprio arquivo.</p>
         <button type="button" id="btn-abrir-vazio" class="btn-solido">Adicionar músicas</button>
       </div>
 

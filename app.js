@@ -372,7 +372,10 @@ const estado = {
   atual: -1,
   ordem: [],
   aleatorio: false,
-  repetir: 'nao',    // 'nao' | 'tudo' | 'uma'
+  // 'tudo' e não 'nao': o transporte tem cinco controles e nenhum deles é
+  // repetir, então não haveria como religar. Parar de tocar ao chegar na
+  // última faixa, sem aviso e sem botão, seria só parecer defeito.
+  repetir: 'tudo',   // 'nao' | 'tudo' | 'uma'
   filtro: 'todas',
   vista: 'biblioteca',
   arrastando: false,
@@ -590,6 +593,10 @@ function aplicarTema(t) {
   // a barra de status do sistema acompanha o fundo
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', t === 'claro' ? '#F4F5F7' : '#0B0B0D');
+
+  // dentro do aplicativo Android, avisa o sistema para as barras de status
+  // e de navegação acompanharem. No navegador esta ponte não existe.
+  try { if (window.Sistema && window.Sistema.tema) window.Sistema.tema(t); } catch (_) {}
 
   try { localStorage.setItem('vitrola:tema', t); } catch (_) {}
 }

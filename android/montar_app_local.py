@@ -122,10 +122,10 @@ escrever("app/src/main/AndroidManifest.xml", """<?xml version="1.0" encoding="ut
 escrever("app/src/main/res/values/themes.xml", """<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="TemaVitrola" parent="android:Theme.Material.NoActionBar">
-        <item name="android:colorBackground">#0E0E10</item>
-        <item name="android:windowBackground">#0E0E10</item>
-        <item name="android:statusBarColor">#0E0E10</item>
-        <item name="android:navigationBarColor">#0E0E10</item>
+        <item name="android:colorBackground">#0B0B0D</item>
+        <item name="android:windowBackground">#0B0B0D</item>
+        <item name="android:statusBarColor">#0B0B0D</item>
+        <item name="android:navigationBarColor">#0B0B0D</item>
     </style>
 </resources>
 """)
@@ -163,8 +163,34 @@ public class MainActivity extends Activity {
             "https://appassets.androidplatform.net/assets/index.html";
     private static final int PEDIDO_ARQUIVO = 4711;
 
+    /** Os mesmos valores do CSS. Se divergirem, aparece uma emenda de dois
+     *  pretos diferentes entre a barra do sistema e o conteudo. */
+    private static final int ESCURO = 0xFF0B0B0D;
+    private static final int CLARO  = 0xFFF4F5F7;
+
     private WebView web;
     private ValueCallback<Uri[]> aoEscolherArquivos;
+
+    private void pintarBarras(boolean claro) {
+        int cor = claro ? CLARO : ESCURO;
+        android.view.Window janela = getWindow();
+        janela.setStatusBarColor(cor);
+        janela.setNavigationBarColor(cor);
+        if (web != null) web.setBackgroundColor(cor);
+
+        // fundo claro pede icone escuro na barra, senao some
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            android.view.View raiz = janela.getDecorView();
+            int f = raiz.getSystemUiVisibility();
+            if (claro) f |= android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            else       f &= ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                if (claro) f |= android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                else       f &= ~android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            }
+            raiz.setSystemUiVisibility(f);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle estado) {
@@ -174,8 +200,29 @@ public class MainActivity extends Activity {
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
                 .build();
 
+        getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+
         web = new WebView(this);
-        web.setBackgroundColor(0xFF0E0E10);
+        web.setBackgroundColor(ESCURO);
+
+        // Ponte para a pagina avisar qual tema escolheu, e as barras do
+        // sistema acompanharem. Sem isso, no tema claro o aplicativo vira
+        // um cartao branco dentro de uma moldura preta.
+        //
+        // addJavascriptInterface tem fama ruim, e com razao quando a pagina
+        // vem da rede. Aqui nao vem: todo o conteudo esta dentro do pacote
+        // e o aplicativo nem pede permissao de internet. Nao existe origem
+        // de fora que possa alcancar esta ponte.
+        web.addJavascriptInterface(new Object() {
+            @android.webkit.JavascriptInterface
+            public void tema(String t) {
+                final boolean claro = "claro".equals(t);
+                runOnUiThread(new Runnable() {
+                    @Override public void run() { pintarBarras(claro); }
+                });
+            }
+        }, "Sistema");
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);

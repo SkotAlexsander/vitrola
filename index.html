@@ -47,7 +47,9 @@
       </button>
       <h1 class="cabeca-titulo">Minhas músicas</h1>
       <button type="button" class="redondo" id="btn-menu" aria-label="Mais opções" aria-expanded="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        <!-- fill explícito: a regra global de svg dá stroke sem fill, e um
+             círculo de raio 1,6 só parecia ponto por acidente do traço -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="pontos"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
     </header>
 

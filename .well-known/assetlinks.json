@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.skotalexsander.vitrola",
+      "sha256_cert_fingerprints": [
+        "72:29:E5:4F:B1:54:19:79:74:1D:72:91:30:EC:45:63:21:51:E3:5E:68:1E:2A:CF:D8:4A:4D:D5:31:88:D7:AD"
+      ]
+    }
+  }
+]

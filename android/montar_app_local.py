@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Monta um aplicativo Android LOCAL de verdade.
 
@@ -211,7 +211,7 @@ public class MainActivity extends Activity {
                     i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                     i.addCategory(Intent.CATEGORY_OPENABLE);
                     startActivityForResult(
-                            Intent.createChooser(i, "Escolher musicas"), PEDIDO_ARQUIVO);
+                            Intent.createChooser(i, "Escolher músicas"), PEDIDO_ARQUIVO);
                     return true;
                 } catch (Exception e) {
                     aoEscolherArquivos = null;

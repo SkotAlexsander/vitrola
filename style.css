@@ -1,152 +1,55 @@
 /* ============================================================================
    VITROLA — folha de estilo
 
-   A referência é o selo Elenco: Aloysio Magalhães, começo dos anos 60.
-   Preto, branco e UMA cor chapada. Tipografia pesada, apertada, em caixa
-   alta. Muito espaço vazio.
+   Tema escuro, único, assumido. Verde-limão é a ÚNICA cor de ação: tocar,
+   filtro ativo, progresso, curtida. Todo o resto é preto e cinza.
 
-   Daí a regra que manda em tudo aqui: a cor de acento é NEUTRA até entrar
-   uma faixa. A interface nasce em preto e branco, e é o álbum que a colore.
-   `--cor` é escrita pelo JS, já corrigida em luminosidade para passar no
-   contraste contra o fundo do tema em vigor.
+   A cor da capa não some — ela vive no BRILHO do fundo, ampliada e
+   desfocada atrás do disco. Assim o álbum ilumina o ambiente sem disputar
+   com o limão, que é quem manda nas ações.
    ========================================================================== */
 
-/* ---------------------------------------------------------------- fichas */
-
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 
-  /* -- escala de espaço. Um valor fora dela é um erro, não uma decisão. -- */
-  --e1: 4px;
-  --e2: 8px;
-  --e3: 12px;
-  --e4: 16px;
-  --e5: 24px;
-  --e6: 32px;
-  --e7: 48px;
-  --vao: clamp(20px, 3.2vw, 44px);      /* o vão entre as duas colunas */
+  /* -- espaço -- */
+  --e1: 4px;  --e2: 8px;  --e3: 12px; --e4: 16px;
+  --e5: 24px; --e6: 32px; --e7: 48px;
 
-  /* -- escala de tipo. O título da faixa é o herói; a marca não compete. -- */
-  --t-xs:    0.75rem;                    /* 12 — selos e crachás           */
-  --t-sm:    0.8125rem;                  /* 13 — dado monoespaçado         */
-  --t-md:    0.875rem;                   /* 14 — texto de interface        */
-  --t-base:  1rem;                       /* 16 — corpo                     */
-  --t-lg:    1.125rem;                   /* 18 — artista                   */
-  --t-marca: clamp(1.25rem, 3.4vw, 1.75rem);
-  --t-faixa: clamp(1.625rem, 4.6vw, 2.5rem);
+  /* -- tipo -- */
+  --t-xs: 0.75rem;    /* 12 */
+  --t-sm: 0.8125rem;  /* 13 */
+  --t-md: 0.9375rem;  /* 15 */
+  --t-lg: 1.0625rem;  /* 17 */
+  --t-xl: 1.375rem;   /* 22 — título da tela de biblioteca */
+  --t-faixa: clamp(1.5rem, 6.5vw, 1.875rem);
 
-  /* -- neutros: viés levemente frio. Papel de prova sob luz de galeria.
+  /* -- cor -- */
+  --fundo:      #0B0B0D;
+  --superficie: #1A1A1E;
+  --superficie2:#26262B;
+  --texto:      #FFFFFF;
+  --fraco:      #9C9CA5;
+  --tenue:      #74747D;
+  --lima:       #CDEB45;
+  --lima-fosca: #A9C233;
 
-     Os três níveis de texto foram MEDIDOS, não escolhidos a olho:
-       --texto  ~15,9:1   título, corpo
-       --fraco   ~7,0:1   artista, rótulos
-       --tenue   ~4,5:1   número, duração, álbum, rodapé — o piso do WCAG
-     A escala é comprimida de propósito. Um cinza mais claro que --tenue
-     ficaria bonito e ilegível: o valor anterior media 1,93:1.
+  --r-pill: 999px;
+  --r-card: 14px;
 
-     --borda é a ÚNICA exceção, e deliberada: é fio decorativo de
-     agrupamento, não contorno de controle. O WCAG 1.4.11 cobre o que é
-     preciso para identificar componente ou entender conteúdo; um filete
-     entre seções não é nem um nem outro. Onde o contorno de fato informa
-     — o trilho do volume, a onda não tocada — existe --limite. --------- */
-  --tinta:    #0E0E10;
-  --cal:      #E8E9EC;
+  --rapido: 160ms cubic-bezier(.2, 0, 0, 1);
+  --lento:  700ms cubic-bezier(.22, .61, .36, 1);
 
-  --fundo:    var(--cal);
-  --texto:    var(--tinta);
-  --fraco:    #494B53;
-  --tenue:    #676971;
-  --borda:    #D3D5DB;
-  --limite:   #84858A;
-  --superf:   #DEE0E5;
-  --onda-off: #84858A;
+  --face: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 
-  /* Fio sobre a capa: preto puro no claro, branco puro no escuro. Um
-     neutro tingido pega a cor da superfície e lê como sujeira na borda. */
-  --fio-imagem: rgb(0 0 0 / 0.12);
-
-  /* Acento neutro enquanto não há faixa. Escolhido por medida, não por
-     gosto: precisa passar 4,5:1 contra o fundo DESTE tema, porque
-     `.btn-solido:hover` põe texto em cima dele. */
-  --cor-neutra: #55575F;
-  --cor:        var(--cor-neutra);
-  --cor-suave:  color-mix(in srgb, var(--cor) 14%, transparent);
-
-  --largura: 1180px;
-
-  /* Duas durações, dois trabalhos. A cor do álbum inundando a página é
-     raro e vale um tempo longo; hover é alta frequência e precisa ser
-     instantâneo. Um token só para os dois deixava o hover lerdo. */
-  --t-lento:  620ms cubic-bezier(.22, .61, .36, 1);
-  --t-rapido: 150ms cubic-bezier(.2, 0, 0, 1);
-
-  --face:      "Helvetica Neue", Helvetica, "Segoe UI", Arial, sans-serif;
-  --face-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  --largura: 460px;          /* é um app de celular, também no computador */
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fundo:      var(--tinta);
-    --texto:      var(--cal);
-    --fraco:      #989AA3;
-    --tenue:      #797B80;
-    --borda:      #26272C;
-    --limite:     #5D5F66;
-    --superf:     #17181C;
-    --onda-off:   #5D5F66;
-    --fio-imagem: rgb(255 255 255 / 0.12);
-    --cor-neutra: #A9ABB3;
-  }
-}
-
-/* o botão de tema tem de vencer a media query nos dois sentidos */
-:root[data-theme="light"] {
-  --fundo:      var(--cal);
-  --texto:      var(--tinta);
-  --fraco:      #494B53;
-  --tenue:      #676971;
-  --borda:      #D3D5DB;
-  --limite:     #84858A;
-  --superf:     #DEE0E5;
-  --onda-off:   #84858A;
-  --fio-imagem: rgb(0 0 0 / 0.12);
-  --cor-neutra: #55575F;
-}
-
-:root[data-theme="dark"] {
-  --fundo:      var(--tinta);
-  --texto:      var(--cal);
-  --fraco:      #989AA3;
-  --tenue:      #797B80;
-  --borda:      #26272C;
-  --limite:     #5D5F66;
-  --superf:     #17181C;
-  --onda-off:   #5D5F66;
-  --fio-imagem: rgb(255 255 255 / 0.12);
-  --cor-neutra: #A9ABB3;
-}
-
-/* ---------------------------------------------------------------- base */
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html {
-  height: 100%;
-  background: var(--fundo);
-  transition: background var(--t-lento);
-}
-
-/* O disco de fundo. Fica atrás de tudo, não recebe toque, e some inteiro
-   sob movimento reduzido — é profundidade, não informação. */
-.fundo {
-  position: fixed;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-}
+html { height: 100%; background: var(--fundo); }
 
 body {
   margin: 0;
@@ -154,25 +57,15 @@ body {
   background: transparent;
   color: var(--texto);
   font-family: var(--face);
-  font-size: var(--t-base);
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background var(--t-lento), color var(--t-lento);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.mono {
-  font-family: var(--face-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--t-sm);
-  letter-spacing: 0.02em;
-}
-
-:where(button, [href], input, [tabindex]):focus-visible {
-  outline: 2px solid var(--cor);
-  outline-offset: 3px;
-  border-radius: 2px;
-}
+[hidden] { display: none !important; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px;
@@ -180,490 +73,525 @@ body {
   clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-/* Cinto e suspensório para o atributo `hidden`: o navegador o respeita,
-   mas basta uma regra de display num seletor mais específico para o
-   elemento voltar a aparecer. Aqui isso aconteceu com os ícones em SVG. */
-[hidden] { display: none !important; }
+:where(button, [href], input, [tabindex]):focus-visible {
+  outline: 2px solid var(--lima);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
 
-.app {
+svg { display: block; }
+svg path, svg circle {
+  fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ------------------------------------------------------------- o brilho */
+
+.brilho {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 62vh;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--lento);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 38%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 0%, #000 38%, transparent 100%);
+}
+.brilho.aceso { opacity: .55; }
+
+.brilho img {
+  position: absolute;
+  left: 50%; top: 0;
+  width: 190%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -32%);
+  object-fit: cover;
+  filter: blur(64px) saturate(1.35);
+}
+
+/* o pulso: um sopro de luz que respira com os graves */
+.pulso {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------- estrutura */
+
+.telas {
+  position: relative;
+  z-index: 1;
   max-width: var(--largura);
   margin-inline: auto;
-
-  /* As áreas seguras entram no padding: instalado no iOS com a barra
-     translúcida, o conteúdo passa por baixo do relógio e do indicador. */
-  padding-block-start:  calc(clamp(18px, 3vw, 34px) + env(safe-area-inset-top, 0px));
-  padding-inline-end:   calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-right, 0px));
-  padding-inline-start: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-left, 0px));
-  padding-block-end: 0;
-
-  display: flex;
-  flex-direction: column;
-  gap: var(--vao);
-
-  /* 100vh mente no celular: conta com a barra do navegador que some ao
-     rolar. dvh é a altura de verdade. */
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100dvh;
+  height: 100vh;
 }
 
-/* ---------------------------------------------------------------- cabeça */
+.tela {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding:
+    calc(var(--e4) + env(safe-area-inset-top, 0px))
+    var(--e5)
+    calc(var(--e4) + env(safe-area-inset-bottom, 0px));
+}
+
+/* --------------------------------------------------------------- cabeça */
 
 .cabeca {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--e4);
-  flex-wrap: wrap;
-  padding-bottom: var(--e3);
-  border-bottom: 1px solid var(--borda);
-}
-
-/* A marca é menor que o título da faixa de propósito: quem manda na
-   composição é o disco tocando, não o nome do programa. */
-.marca {
-  margin: 0;
-  font-size: var(--t-marca);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  text-transform: uppercase;
-  line-height: 1;
-}
-
-.marca::after {
-  content: "";
-  display: inline-block;
-  width: 0.28em; height: 0.28em;
-  margin-inline-start: 0.16em;
-  border-radius: 50%;
-  background: var(--cor);
-  transition: background var(--t-lento);
-}
-
-.cabeca-acoes { display: flex; align-items: center; gap: var(--e3); }
-
-.btn-texto {
-  font: inherit;
-  font-size: var(--t-md);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--fraco);
-  background: none;
-  border: 0;
-  padding: var(--e2) var(--e1);
-  cursor: pointer;
-  transition: color var(--t-rapido), scale var(--t-rapido);
-}
-.btn-texto:hover { color: var(--texto); }
-
-.btn-solido {
-  font: inherit;
-  font-size: var(--t-md);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fundo);
-  background: var(--texto);
-  border: 0;
-  padding: var(--e3) var(--e4);
-  cursor: pointer;
-  transition: background var(--t-rapido), color var(--t-lento), scale var(--t-rapido);
-}
-.btn-solido:hover { background: var(--cor); }
-
-/* Secundário. Existe porque dois botões sólidos idênticos na mesma tela
-   competem pela atenção em vez de dizer qual é a ação principal. */
-.btn-linha {
-  font: inherit;
-  font-size: var(--t-md);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--texto);
-  background: none;
-  border: 1px solid var(--limite);
-  padding: calc(var(--e3) - 1px) calc(var(--e4) - 1px);
-  cursor: pointer;
-  transition: border-color var(--t-rapido), color var(--t-rapido), scale var(--t-rapido);
-}
-.btn-linha:hover { border-color: var(--cor); color: var(--cor); }
-.btn-linha:active { scale: 0.96; }
-
-/* ---------------------------------------------------------------- palco */
-
-.palco {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
-  gap: var(--vao);
-  align-items: start;
-  flex: 1;
-}
-
-@media (max-width: 900px) {
-  .palco { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* ---------------------------------------------------------------- a capa */
-
-.sleeve { display: flex; flex-direction: column; gap: var(--e5); min-width: 0; }
-
-.capa {
-  position: relative;
-  aspect-ratio: 1;
-  width: 100%;
-  /* O limite por vh não é capricho: numa tela de 900 px a capa em 460
-     empurrava o transporte para baixo da dobra. Num player, ter de rolar
-     para dar pausa é defeito. */
-  max-width: min(460px, 44vh);
-  background: var(--superf);
-  overflow: hidden;
-  border-radius: 0;                     /* capa de disco não tem canto redondo */
-  outline: 1px solid var(--fio-imagem);
-  outline-offset: -1px;
-  transition: background var(--t-lento);
-}
-
-.capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.capa-vazia {
-  position: absolute; inset: 0;
-  display: grid; place-items: center;
-  padding: 16%;
-}
-.capa-vazia svg { width: 100%; height: 100%; }
-/* o disco da capa vazia é ilustração, não informação — fio decorativo */
-.disco-borda { fill: none; stroke: var(--borda); stroke-width: 1; }
-.disco-sulco { fill: none; stroke: var(--borda); stroke-width: .6; }
-.disco-selo  { fill: var(--cor); opacity: .5; transition: fill var(--t-lento); }
-.disco-furo  { fill: var(--fundo); }
-
-.agora { display: flex; flex-direction: column; gap: var(--e1); min-width: 0; }
-
-.agora-titulo {
-  margin: 0;
-  font-size: var(--t-faixa);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.15;                    /* título longo quebra em 3 linhas */
-  text-wrap: balance;
-  overflow-wrap: break-word;
-}
-
-.agora-artista {
-  margin: 0;
-  font-size: var(--t-lg);
-  font-weight: 400;
-  color: var(--fraco);
-  overflow-wrap: break-word;
-}
-
-.agora-album {
-  margin: var(--e1) 0 0;
-  color: var(--tenue);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-/* ------------------------------------------------- a onda / progresso */
-
-.linha-tempo { display: flex; flex-direction: column; gap: var(--e1); }
-
-.onda-caixa {
-  position: relative;
-  height: 76px;
-  cursor: pointer;
-  touch-action: none;
-}
-.onda-caixa canvas { display: block; width: 100%; height: 100%; }
-
-.tempos { display: flex; justify-content: space-between; color: var(--fraco); }
-
-/* ---------------------------------------------------------- transporte */
-
-.transporte {
-  display: flex;
+  grid-template-columns: 40px 1fr 40px;
   align-items: center;
-  gap: var(--e2);
-  flex-wrap: wrap;
-}
-
-.btn-icone, .btn-tocar {
-  display: grid;
-  place-items: center;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  color: var(--texto);
-  position: relative;
-}
-
-.btn-icone {
-  width: 40px; height: 40px;
-  color: var(--fraco);
-  transition: color var(--t-rapido), scale var(--t-rapido);
-}
-.btn-icone:hover { color: var(--texto); }
-.btn-icone svg { width: 20px; height: 20px; }
-
-.btn-alterna[aria-pressed="true"] { color: var(--cor); }
-
-.marca-um {
-  position: absolute;
-  inset-inline-end: 2px; inset-block-end: 2px;
-  font-size: var(--t-xs);
-  font-weight: 700;
-  line-height: 1;
-  color: var(--cor);
-}
-
-.btn-tocar {
-  width: 62px; height: 62px;
-  border-radius: 50%;
-  background: var(--texto);
-  color: var(--fundo);
-  transition: background var(--t-rapido), color var(--t-lento), scale var(--t-rapido);
-}
-.btn-tocar:hover { background: var(--cor); }
-.btn-tocar svg { width: 24px; height: 24px; }
-
-/* Pressão: 0.96 exatos. Abaixo de 0.95 fica exagerado. */
-.btn-icone:active, .btn-tocar:active, .btn-solido:active,
-.btn-texto:active, .fila-linha:active { scale: 0.96; }
-
-svg path { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-#icone-tocar path, #btn-anterior path, #btn-proximo path { fill: currentColor; stroke: currentColor; stroke-width: 2.4; }
-#icone-som path, #icone-mudo path { fill: none; }
-#icone-som path:first-child, #icone-mudo path:first-child { fill: currentColor; }
-
-.volume { display: flex; align-items: center; gap: var(--e2); margin-inline-start: auto; }
-
-input[type="range"] {
-  -webkit-appearance: none; appearance: none;
-  width: clamp(70px, 12vw, 118px);
-  height: 24px;                          /* o alvo, não o traço */
-  background: none;
-  cursor: pointer;
-}
-input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--limite); }
-input[type="range"]::-moz-range-track { height: 2px; background: var(--limite); }
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--texto); border: 0; margin-top: -6px;
-  transition: background var(--t-rapido);
-}
-input[type="range"]::-moz-range-thumb {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--texto); border: 0;
-}
-input[type="range"]:hover::-webkit-slider-thumb { background: var(--cor); }
-input[type="range"]:hover::-moz-range-thumb { background: var(--cor); }
-
-/* ---------------------------------------------------------------- encarte */
-
-.encarte {
-  display: flex;
-  flex-direction: column;
   gap: var(--e3);
-  min-width: 0;
-  border-inline-start: 1px solid var(--borda);
-  padding-inline-start: var(--vao);
+  flex: none;
 }
 
-@media (max-width: 900px) {
-  .encarte {
-    border-inline-start: 0;
-    padding-inline-start: 0;
-    border-block-start: 1px solid var(--borda);
-    padding-block-start: var(--e5);
-  }
-}
-
-.encarte-cabeca {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--e3);
-}
-
-.encarte-cabeca h2 {
+.cabeca-titulo {
   margin: 0;
-  font-size: var(--t-md);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  text-align: center;
+  font-size: var(--t-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.conta { color: var(--tenue); }
 
-.fila {
+.redondo {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: rgb(255 255 255 / .10);
+  backdrop-filter: blur(12px);
+  color: var(--texto);
+  cursor: pointer;
+  transition: background var(--rapido), scale var(--rapido), color var(--rapido);
+}
+.redondo:hover { background: rgb(255 255 255 / .18); }
+.redondo:active { scale: .94; }
+.redondo svg { width: 19px; height: 19px; }
+
+#btn-curtir[aria-pressed="true"] { color: var(--lima); }
+#btn-curtir[aria-pressed="true"] .coracao path { fill: var(--lima); }
+
+/* --------------------------------------------------------------- menu */
+
+.menu {
+  position: absolute;
+  inset-inline-end: var(--e5);
+  top: calc(var(--e4) + env(safe-area-inset-top, 0px) + 46px);
+  z-index: 5;
+  background: var(--superficie2);
+  border-radius: var(--r-card);
+  padding: var(--e1);
+  display: flex; flex-direction: column;
+  min-width: 220px;
+  box-shadow: 0 18px 40px rgb(0 0 0 / .55);
+}
+.menu-item {
+  font: inherit; font-size: var(--t-md);
+  text-align: start; color: var(--texto);
+  background: none; border: 0;
+  padding: var(--e3) var(--e4);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.menu-item:hover { background: rgb(255 255 255 / .07); }
+
+/* --------------------------------------------------------------- chips */
+
+.chips {
+  display: flex;
+  gap: var(--e2);
+  margin-block: var(--e5) var(--e4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+  /* deixa o próximo espiar a borda, avisando que rola */
+  padding-inline-end: var(--e6);
+}
+.chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex: none;
+  font: inherit;
+  font-size: var(--t-md);
+  font-weight: 500;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: var(--e3) var(--e5);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--rapido), color var(--rapido), scale var(--rapido);
+}
+.chip:active { scale: .96; }
+.chip[aria-pressed="true"] {
+  background: var(--lima);
+  color: #10130A;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------- lista */
+
+.lista {
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--e1);
-  max-height: min(56vh, 520px);
+  padding: 0 0 96px;                 /* espaço para o mini player flutuar */
+  flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
 }
-.fila:empty { display: none; }
+.lista::-webkit-scrollbar { display: none; }
 
-/* Sem linha separadora: o espaço agrupa, o fundo no hover confirma o alvo.
-   Trinta hairlines iguais viram ruído. */
-.fila-linha {
+.lista-grupo {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--tenue);
+  padding: var(--e5) var(--e2) var(--e2);
+}
+
+.item {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: 56px minmax(0, 1fr) 40px;
   align-items: center;
-  gap: var(--e3);
+  gap: var(--e4);
   width: 100%;
-  padding: var(--e2) var(--e2);
-  font: inherit;
-  text-align: start;
-  color: inherit;
+  padding: var(--e2);
+  margin-block-end: var(--e2);
   background: none;
   border: 0;
+  border-radius: var(--r-card);
+  color: inherit;
+  font: inherit;
+  text-align: start;
   cursor: pointer;
-  transition: background var(--t-rapido), scale var(--t-rapido);
+  transition: background var(--rapido), scale var(--rapido);
 }
-.fila-linha:hover { background: var(--cor-suave); }
+.item:hover { background: rgb(255 255 255 / .05); }
+.item:active { scale: .985; }
 
-.fila-num { color: var(--tenue); font-family: var(--face-mono); font-size: var(--t-xs); }
+.item-capa {
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--superficie);
+  display: grid; place-items: center;
+  flex: none;
+}
+.item-capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.item-capa svg { width: 60%; height: 60%; opacity: .5; }
 
-.fila-txt { min-width: 0; }
-.fila-tit {
+.item-txt { min-width: 0; }
+.item-tit {
   display: block;
   font-size: var(--t-md);
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.fila-art {
+.item-sub {
   display: block;
   font-size: var(--t-sm);
-  font-weight: 400;
   color: var(--fraco);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.fila-dur { color: var(--tenue); font-family: var(--face-mono); font-size: var(--t-xs); }
+.item-sub b { color: var(--fraco); font-weight: 400; }
 
-/* A faixa tocando: cor E um traço à esquerda. Cor sozinha nunca é o
-   único sinal de estado. */
-.fila-linha[aria-current="true"] { box-shadow: inset 2px 0 0 var(--cor); }
-.fila-linha[aria-current="true"] .fila-tit,
-.fila-linha[aria-current="true"] .fila-num { color: var(--cor); }
-
-.encarte-vazio {
-  color: var(--fraco);
-  font-size: var(--t-md);
-  max-width: 42ch;
-  display: flex; flex-direction: column; gap: var(--e2);
-  align-items: flex-start;
-  text-wrap: pretty;
+.item-play {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--superficie2);
+  color: var(--texto);
+  flex: none;
 }
-.encarte-vazio p { margin: 0; }
-.encarte-vazio strong { color: var(--texto); font-weight: 700; }
-.encarte-vazio .btn-solido { margin-block-start: var(--e2); }
+.item-play svg { width: 15px; height: 15px; }
+.item-play svg path { fill: currentColor; stroke: none; }
 
-.btn-limpar { align-self: flex-start; }
+/* a que toca: limão E um traço, porque cor sozinha nunca basta */
+.item[aria-current="true"] { background: rgb(205 235 69 / .07); }
+.item[aria-current="true"] .item-tit { color: var(--lima); }
+.item[aria-current="true"] .item-play { background: var(--lima); color: #10130A; }
 
-/* ------------------------------------------------------- espectro e rodapé */
-
-.espectro {
-  display: block;
-  width: 100%;
-  height: 64px;
-  margin-block-start: auto;
+.item-curtida {
+  width: 13px; height: 13px;
+  display: inline-block;
+  vertical-align: -1px;
+  margin-inline-end: 5px;
+  color: var(--lima);
 }
+.item-curtida path { fill: currentColor; stroke: none; }
 
-.rodape {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--e1) var(--e4);
-  padding: var(--e3) 0 var(--e5);
-  border-block-start: 1px solid var(--borda);
-  color: var(--tenue);
+/* --------------------------------------------------------------- vazio */
+
+.vazio {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  gap: var(--e3);
+  padding-block-end: 60px;
 }
+.vazio-disco { width: 128px; height: 128px; opacity: .5; }
+.vazio-titulo { margin: var(--e4) 0 0; font-size: var(--t-lg); font-weight: 600; }
+.vazio-texto  { margin: 0; font-size: var(--t-md); color: var(--fraco); max-width: 34ch; text-wrap: pretty; }
+.vazio-nota   { margin: var(--e2) 0 0; font-size: var(--t-sm); color: var(--tenue); max-width: 34ch; text-wrap: pretty; }
 
-kbd {
+.botao-lima {
   font: inherit;
+  font-size: var(--t-md);
+  font-weight: 600;
+  color: #10130A;
+  background: var(--lima);
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: var(--e3) var(--e6);
+  margin-block-start: var(--e2);
+  cursor: pointer;
+  transition: scale var(--rapido), background var(--rapido);
+}
+.botao-lima:hover { background: #DBF562; }
+.botao-lima:active { scale: .96; }
+
+.d-borda { fill: none; stroke: var(--tenue); stroke-width: 1.4; }
+.d-sulco { fill: none; stroke: var(--tenue); stroke-width: .8; opacity: .7; }
+.d-selo  { fill: var(--lima); stroke: none; }
+.d-furo  { fill: var(--fundo); stroke: none; }
+
+/* --------------------------------------------------------- mini player */
+
+.mini {
+  position: absolute;
+  inset-inline: var(--e5);
+  bottom: calc(var(--e4) + env(safe-area-inset-bottom, 0px));
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 40px 40px;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e2);
+  border-radius: var(--r-pill);
+  background: rgb(38 38 43 / .82);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 12px 34px rgb(0 0 0 / .5);
+}
+.mini-capa {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 0; padding: 0;
+  background: var(--superficie);
+  cursor: pointer;
+}
+.mini-capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mini-txt {
+  min-width: 0; text-align: start;
+  background: none; border: 0; padding: 0;
+  color: inherit; font: inherit; cursor: pointer;
+}
+.mini-txt strong {
+  display: block; font-size: var(--t-sm); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mini-txt span {
+  display: block; font-size: var(--t-xs); color: var(--fraco);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mini-btn {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: none; color: var(--texto); cursor: pointer;
+}
+.mini-btn:active { scale: .92; }
+.mini-btn svg { width: 18px; height: 18px; }
+.mini-btn svg path { fill: currentColor; stroke: none; }
+
+/* ------------------------------------------------------------ a bolacha */
+
+.bolacha {
+  position: relative;
+  width: min(72%, 300px);
+  aspect-ratio: 1;
+  margin: clamp(16px, 5vh, 44px) auto clamp(16px, 4vh, 32px);
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+  background: var(--superficie);
+  box-shadow: 0 24px 60px rgb(0 0 0 / .55);
+}
+.bolacha img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bolacha-vazia { position: absolute; inset: 14%; }
+
+.agora { text-align: center; flex: none; }
+.agora-titulo {
+  margin: 0;
+  font-size: var(--t-faixa);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+.agora-artista {
+  margin: var(--e1) 0 0;
+  font-size: var(--t-md);
   color: var(--fraco);
-  border: 1px solid var(--borda);
-  border-bottom-width: 2px;
-  padding: 0 var(--e1);
-  margin-inline-end: 3px;
-  border-radius: 3px;
+  overflow-wrap: break-word;
 }
 
-/* ---------------------------------------------------------------- cortina */
+/* --------------------------------------------------------------- letra */
+
+.letra {
+  flex: 1;
+  min-height: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: var(--e1);
+  text-align: center;
+  padding-block: var(--e4);
+}
+.letra-linha {
+  margin: 0;
+  font-size: var(--t-md);
+  line-height: 1.5;
+  max-width: 30ch;
+  transition: color var(--rapido), opacity var(--rapido);
+  overflow-wrap: break-word;
+}
+.letra-antes, .letra-depois { color: var(--tenue); opacity: .55; }
+.letra-atual  { color: var(--texto); font-weight: 600; font-size: var(--t-lg); }
+.letra-aviso  { color: var(--tenue); font-size: var(--t-sm); }
+
+/* ----------------------------------------------------------- progresso */
+
+.progresso { flex: none; margin-block-end: var(--e5); }
+
+.trilho {
+  position: relative;
+  height: 26px;
+  cursor: pointer;
+  touch-action: none;
+  display: flex; align-items: center;
+}
+.trilho-fundo, .trilho-cheio {
+  position: absolute;
+  height: 3px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.trilho-fundo { inset-inline: 0; background: rgb(255 255 255 / .16); }
+.trilho-cheio { inset-inline-start: 0; width: 0; background: var(--lima); }
+.trilho-bola {
+  position: absolute;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--lima);
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 0 0 4px rgb(205 235 69 / .18);
+}
+
+.tempos {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-xs);
+  color: var(--fraco);
+  margin-block-start: var(--e1);
+}
+
+/* ---------------------------------------------------------- transporte */
+
+.transporte {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: var(--e2);
+}
+
+.t-btn {
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  cursor: pointer;
+  color: var(--texto);
+  transition: background var(--rapido), scale var(--rapido), color var(--rapido);
+}
+.t-btn:active { scale: .94; }
+
+.t-plano { width: 44px; height: 44px; background: none; color: var(--fraco); }
+.t-plano:hover { color: var(--texto); }
+.t-plano svg { width: 20px; height: 20px; }
+.t-plano[aria-pressed="true"] { color: var(--lima); }
+
+.t-cinza { width: 52px; height: 52px; background: var(--superficie2); }
+.t-cinza svg { width: 20px; height: 20px; }
+.t-cinza svg path { fill: currentColor; stroke: none; }
+
+/* o centro é maior e é a única coisa limão aqui: hierarquia sem enfeite */
+.t-lima {
+  width: 68px; height: 68px;
+  background: var(--lima);
+  color: #10130A;
+  box-shadow: 0 10px 28px rgb(205 235 69 / .26);
+}
+.t-lima:hover { background: #DBF562; }
+.t-lima svg { width: 26px; height: 26px; }
+.t-lima svg path { fill: currentColor; stroke: none; }
+#icone-pausa path { fill: none; stroke: currentColor; stroke-width: 2.6; }
+#mini-icone-pausa path { fill: none; stroke: currentColor; stroke-width: 2.4; }
+
+/* -------------------------------------------------------------- cortina */
 
 .cortina {
-  position: fixed; inset: 0;
-  z-index: 50;
+  position: fixed; inset: 0; z-index: 50;
   display: grid; place-items: center;
-  background: color-mix(in srgb, var(--fundo) 88%, transparent);
-  backdrop-filter: blur(3px);
+  background: rgb(11 11 13 / .9);
+  backdrop-filter: blur(4px);
 }
-.cortina[hidden] { display: none; }
 .cortina p {
   margin: 0;
-  font-size: clamp(1.4rem, 5vw, 2.6rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
-  padding: clamp(28px, 6vw, 64px) clamp(36px, 9vw, 96px);
-  border: 2px dashed var(--cor);
-  color: var(--cor);
+  font-size: clamp(1.2rem, 5vw, 1.8rem);
+  font-weight: 700;
+  color: var(--lima);
+  border: 2px dashed var(--lima);
+  border-radius: var(--r-card);
+  padding: clamp(28px, 7vw, 56px) clamp(32px, 9vw, 72px);
+  text-align: center;
 }
 
-/* ------------------------------------------------------------ celular */
+/* --------------------------------------------------------------- telas largas */
 
-@media (pointer: coarse) {
-  .btn-icone { width: 44px; height: 44px; }
-  .fila-linha { padding-block: var(--e3); }
-  .transporte { gap: var(--e3); }
-
-  /* O telefone já tem controle de volume no lado do aparelho. Repetir
-     isso na tela rouba largura do transporte, que é o que se usa. O botão
-     de mudo fica: silenciar rápido é outra intenção. */
-  #volume { display: none; }
-
-  /* Atalho de teclado não serve a quem não tem teclado. */
-  .rodape { display: none; }
-
-  .app { padding-block-end: env(safe-area-inset-bottom, 0px); }
-  .espectro { height: 44px; }
+@media (min-width: 520px) {
+  /* no computador continua sendo um app de celular, centrado e com moldura */
+  .telas {
+    height: min(100vh, 900px);
+    margin-block: max(0px, calc((100vh - 900px) / 2));
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgb(0 0 0 / .6);
+    outline: 1px solid rgb(255 255 255 / .07);
+    outline-offset: -1px;
+  }
+  body { background: #08080A; }
 }
 
-/* Telefone em pé: a capa é limitada pela ALTURA, não pela largura. Sem
-   isto ela ocupa a tela inteira e os controles ficam abaixo da dobra —
-   num player, ter de rolar para dar pausa é defeito. */
-@media (max-width: 640px) {
-  /* A cabeça empilha. Lado a lado, marca + tema + botão não cabem em
-     372 px úteis e a página passava a rolar para o lado. */
-  .cabeca { flex-direction: column; align-items: stretch; gap: var(--e3); }
-  .cabeca-acoes { justify-content: space-between; }
-  .cabeca-acoes .btn-linha { flex: 1; }
-
-  .capa { max-width: min(100%, 42vh); margin-inline: auto; }
-  .sleeve { gap: var(--e4); }
-  .onda-caixa { height: 60px; }
-  .agora { text-align: center; }
-  .transporte { justify-content: center; }
-  .volume { margin-inline-start: 0; }
-}
-
-/* Telefone deitado: quase não há altura. A capa some e a fila sobe. */
-@media (max-height: 460px) and (orientation: landscape) {
-  .capa, .espectro { display: none; }
-  .app { gap: var(--e4); }
-  .cabeca { padding-bottom: var(--e2); }
-}
-
-/* ---------------------------------------------------------------- respeito */
+/* ------------------------------------------------------------- respeito */
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --t-lento: 1ms; --t-rapido: 1ms; }
-  .btn-icone:active, .btn-tocar:active, .btn-solido:active,
-  .btn-texto:active, .fila-linha:active { scale: 1; }
-  * { animation: none !important; }
+  :root { --rapido: 1ms; --lento: 1ms; }
+  .pulso { display: none; }
+  .t-btn:active, .chip:active, .item:active, .redondo:active,
+  .botao-lima:active, .mini-btn:active { scale: 1; }
 }

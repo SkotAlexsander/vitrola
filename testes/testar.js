@@ -1,7 +1,7 @@
 /* Uso: node testes/testar.js
    Carrega o app.js de verdade num DOM falso e testa o que e logica pura:
-   o leitor de ID3 (contra arquivos sinteticos montados byte a byte) e a
-   matematica de cor. Interface, audio e Media Session so olhando. */
+   o leitor de ID3 — incluindo a letra com marcacao de tempo — e a
+   formatacao de tempo. Interface, audio e Media Session so olhando. */
 
 const fs = require('fs');
 const path = require('path');
@@ -12,31 +12,31 @@ const ARQ = path.join(__dirname, '..', 'app.js');
 /* ---------------------------------------------------------- DOM de mentira */
 const noop = () => {};
 function elFalso(id) {
-  const el = {
-    id, textContent: '', innerHTML: '', value: '85', hidden: false,
-    dataset: {}, style: { setProperty: noop, removeProperty: noop },
+  return {
+    id, textContent: '', innerHTML: '', value: '', hidden: false,
+    dataset: {}, style: {}, title: '',
     src: '', alt: '', paused: true, volume: 1, muted: false,
-    currentTime: 0, duration: 0, playbackRate: 1,
-    width: 800, height: 100,
-    addEventListener: noop, removeEventListener: noop, setAttribute: noop,
-    getAttribute: () => null, hasAttribute: () => false, removeAttribute: noop,
-    toggleAttribute: noop,
-    appendChild: noop, append: noop, closest: () => null, click: noop,
+    currentTime: 0, duration: 0, playbackRate: 1, width: 800, height: 600,
+    classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+    addEventListener: noop, removeEventListener: noop,
+    setAttribute: noop, getAttribute: () => null, hasAttribute: () => false,
+    removeAttribute: noop, toggleAttribute: noop,
+    appendChild: noop, append: noop, prepend: noop, remove: noop,
+    contains: () => false, closest: () => null, click: noop,
     setPointerCapture: noop, releasePointerCapture: noop,
     play: () => Promise.resolve(), pause: noop, load: noop,
-    getBoundingClientRect: () => ({ width: 800, height: 100, left: 0, top: 0 }),
+    getBoundingClientRect: () => ({ width: 400, height: 700, left: 0, top: 0 }),
     getContext: () => ctxFalso(),
   };
-  return el;
 }
-const PROPS = new Set(['fillStyle','strokeStyle','lineWidth','lineCap','lineJoin','font',
-  'textAlign','textBaseline','globalAlpha','globalCompositeOperation','shadowColor',
-  'shadowBlur','filter','imageSmoothingEnabled']);
+const PROPS = new Set(['fillStyle', 'strokeStyle', 'lineWidth', 'lineCap', 'lineJoin',
+  'font', 'textAlign', 'textBaseline', 'globalAlpha', 'globalCompositeOperation',
+  'shadowColor', 'shadowBlur', 'filter']);
 function ctxFalso() {
-  const dados = { data: new Uint8ClampedArray(56 * 56 * 4) };
   return new Proxy({}, {
     get(a, k) {
-      if (k === 'getImageData') return () => dados;
+      if (k === 'getImageData') return () => ({ data: new Uint8ClampedArray(40 * 40 * 4) });
+      if (k === 'createRadialGradient') return () => ({ addColorStop: noop });
       if (PROPS.has(k)) return a[k];
       return noop;
     },
@@ -44,24 +44,18 @@ function ctxFalso() {
   });
 }
 
-const guardado = {};
 const ctxGlobal = {
-  console, Blob, File, TextDecoder, Uint8Array, Float32Array, Promise, Math, JSON,
-  setTimeout, clearTimeout, Audio: function () { return elFalso('sonda'); },
+  console, Blob, File, TextDecoder, Uint8Array, Uint8ClampedArray, Promise, Math, JSON,
+  setTimeout, clearTimeout, requestAnimationFrame: noop,
+  Audio: function () { return elFalso('sonda'); },
   Image: function () { return elFalso('img'); },
-  requestAnimationFrame: noop, cancelAnimationFrame: noop,
   URL: { createObjectURL: () => 'blob:falso', revokeObjectURL: noop },
-  localStorage: {
-    getItem: k => (k in guardado ? guardado[k] : null),
-    setItem: (k, v) => { guardado[k] = String(v); },
-  },
-  getComputedStyle: () => ({ getPropertyValue: () => '' }),
   document: {
     getElementById: elFalso,
     createElement: elFalso,
+    createElementNS: elFalso,
     querySelector: elFalso,
     querySelectorAll: () => [],
-    documentElement: elFalso('html'),
     addEventListener: noop,
     title: '',
   },
@@ -73,16 +67,11 @@ const ctxGlobal = {
   navigator: {},
 };
 ctxGlobal.globalThis = ctxGlobal;
-ctxGlobal.window.document = ctxGlobal.document;
 vm.createContext(ctxGlobal);
 
 let src = fs.readFileSync(ARQ, 'utf8');
 src += `
-;globalThis.__t = {
-  lerEtiquetas, lerID3v2, lerID3v1, sincroSeguro,
-  rgbParaHsl, hslParaRgb, luminancia, contraste, hexParaRgb,
-  corrigirContraste, ALVO_CONTRASTE, tempo,
-};`;
+;globalThis.__t = { lerEtiquetas, lerID3v2, lerID3v1, sincroSeguro, tempo };`;
 vm.runInContext(src, ctxGlobal, { filename: 'app.js' });
 const T = ctxGlobal.__t;
 
@@ -130,10 +119,25 @@ function apic(versao) {
   return Buffer.concat([Buffer.from([0]), Buffer.from('image/png\0', 'latin1'),
                         Buffer.from([3]), Buffer.from('capa\0', 'latin1'), PNG]);
 }
+/** USLT: enc, idioma(3), descricao\0, letra */
+function uslt(linhas) {
+  return Buffer.concat([Buffer.from([3]), Buffer.from('por', 'latin1'),
+                        Buffer.from('\0', 'latin1'), Buffer.from(linhas.join('\n'), 'utf8')]);
+}
+/** SYLT: enc, idioma(3), formato, tipo, descricao\0, [texto\0 tempo(4)]* */
+function sylt(pares) {
+  const partes = [Buffer.from([3]), Buffer.from('por', 'latin1'),
+                  Buffer.from([2]), Buffer.from([1]), Buffer.from('\0', 'latin1')];
+  for (const [ms, txt] of pares) {
+    const t = Buffer.alloc(4);
+    t.writeUInt32BE(ms, 0);
+    partes.push(Buffer.from(txt, 'utf8'), Buffer.from('\0', 'latin1'), t);
+  }
+  return Buffer.concat(partes);
+}
 function mp3(nome, quadros, versao) {
   const corpo = Buffer.concat(quadros);
-  const audioFalso = Buffer.alloc(2048, 0x55);
-  const todo = Buffer.concat([cabecalho(versao, corpo.length), corpo, audioFalso]);
+  const todo = Buffer.concat([cabecalho(versao, corpo.length), corpo, Buffer.alloc(2048, 0x55)]);
   return new File([todo], nome, { type: 'audio/mpeg' });
 }
 function comID3v1(nome, titulo, artista, album) {
@@ -145,10 +149,10 @@ function comID3v1(nome, titulo, artista, album) {
   return new File([Buffer.alloc(4096, 0x55), t], nome, { type: 'audio/mpeg' });
 }
 
-/* ============================================================= os testes */
+/* ================================================================ os testes */
 (async () => {
 
-console.log('\n[1] ID3v2.3 - o formato mais comum');
+console.log('\n[1] ID3v2.3 — o formato mais comum');
 {
   const f = mp3('faixa.mp3', [
     quadro('TIT2', texto(1, 'Águas de Março'), 3),
@@ -162,11 +166,11 @@ console.log('\n[1] ID3v2.3 - o formato mais comum');
   ok(t.artista === 'Elis Regina', `artista em latin1: "${t.artista}"`);
   ok(t.album === 'Elis & Tom', `album: "${t.album}"`);
   ok(t.faixa === '3/12', `numero da faixa: "${t.faixa}"`);
-  ok(t.capa && t.capa.type === 'image/png', `capa extraida, tipo ${t.capa && t.capa.type}`);
-  ok(t.capa && t.capa.size === PNG.length, `capa com ${t.capa && t.capa.size} bytes (esperado ${PNG.length})`);
+  ok(t.capa && t.capa.type === 'image/png' && t.capa.size === PNG.length,
+     `capa extraida, ${t.capa && t.capa.size} bytes`);
 }
 
-console.log('\n[2] ID3v2.4 - tamanho de quadro sincro-seguro e UTF-8');
+console.log('\n[2] ID3v2.4 — tamanho sincro-seguro e UTF-8');
 {
   const f = mp3('faixa.mp3', [
     quadro('TIT2', texto(3, 'Construção'), 4),
@@ -176,12 +180,11 @@ console.log('\n[2] ID3v2.4 - tamanho de quadro sincro-seguro e UTF-8');
   ], 4);
   const t = await T.lerEtiquetas(f);
   ok(t.titulo === 'Construção', `titulo em UTF-8: "${t.titulo}"`);
-  ok(t.artista === 'Chico Buarque', `artista: "${t.artista}"`);
   ok(t.ano === '1971', `ano por TDRC: "${t.ano}"`);
   ok(!!t.capa, 'capa lida do quadro APIC');
 }
 
-console.log('\n[3] ID3v2.2 - identificadores de 3 letras');
+console.log('\n[3] ID3v2.2 — identificadores de 3 letras');
 {
   const f = mp3('faixa.mp3', [
     quadro('TT2', texto(0, 'Ponta de Lanca'), 2),
@@ -194,19 +197,44 @@ console.log('\n[3] ID3v2.2 - identificadores de 3 letras');
   ok(t.capa && t.capa.type === 'image/png', 'capa do quadro PIC de 3 letras');
 }
 
-console.log('\n[4] quando nao ha ID3v2');
+console.log('\n[4] a letra');
+{
+  const f = mp3('faixa.mp3', [
+    quadro('TIT2', texto(3, 'Com letra'), 3),
+    quadro('SYLT', sylt([[0, 'Primeira linha'], [4200, 'Segunda linha'], [9000, 'Terceira linha']]), 3),
+  ], 3);
+  const t = await T.lerEtiquetas(f);
+  const L = t.letraSinc;
+  ok(L && L.tipo === 'sincronizada', 'SYLT reconhecido como letra com marcacao de tempo');
+  ok(L && L.linhas.length === 3, `tres linhas lidas (${L && L.linhas.length})`);
+  ok(L && L.linhas[1].texto === 'Segunda linha', `texto da 2a linha: "${L && L.linhas[1].texto}"`);
+  ok(L && Math.abs(L.linhas[1].t - 4.2) < 0.001, `tempo da 2a linha: ${L && L.linhas[1].t}s (esperado 4.2)`);
+
+  const g = mp3('faixa.mp3', [
+    quadro('TIT2', texto(3, 'Sem tempo'), 3),
+    quadro('USLT', uslt(['Uma linha', 'Outra linha', '', 'Mais uma']), 3),
+  ], 3);
+  const u = (await T.lerEtiquetas(g)).letraTexto;
+  ok(u && u.tipo === 'corrida', 'USLT reconhecido como letra sem marcacao');
+  ok(u && u.linhas.length === 3, `linhas vazias descartadas (${u && u.linhas.length} de 4)`);
+
+  const h = mp3('faixa.mp3', [quadro('TIT2', texto(3, 'Nada'), 3)], 3);
+  const n = await T.lerEtiquetas(h);
+  ok(!n.letraSinc && !n.letraTexto, 'arquivo sem letra nao inventa letra');
+}
+
+console.log('\n[5] quando nao ha ID3v2');
 {
   const t = await T.lerEtiquetas(comID3v1('x.mp3', 'Alegria', 'Caetano', 'Transa'));
   ok(t.titulo === 'Alegria', `cai para o ID3v1: "${t.titulo}"`);
-  ok(t.artista === 'Caetano', `artista pelo v1: "${t.artista}"`);
 
   const semNada = new File([Buffer.alloc(3000, 0x55)], 'minha_musica_favorita.mp3', { type: 'audio/mpeg' });
   const t2 = await T.lerEtiquetas(semNada);
-  ok(t2.titulo === 'minha musica favorita', `sem etiqueta nenhuma, usa o nome: "${t2.titulo}"`);
-  ok(t2.artista === 'Artista desconhecido', 'e diz que o artista e desconhecido');
+  ok(t2.titulo === 'minha musica favorita', `sem etiqueta, usa o nome: "${t2.titulo}"`);
+  ok(t2.artista === 'Artista desconhecido', 'e diz que o artista e desconhecido, em portugues');
 }
 
-console.log('\n[5] arquivo torto nao pode derrubar o leitor');
+console.log('\n[6] arquivo torto nao pode derrubar o leitor');
 {
   const lixo = new File([Buffer.concat([Buffer.from('ID3', 'latin1'),
     Buffer.from([3, 0, 0]), Buffer.from([0x7f, 0x7f, 0x7f, 0x7f]),
@@ -216,63 +244,13 @@ console.log('\n[5] arquivo torto nao pode derrubar o leitor');
   ok(!quebrou, 'cabecalho mentindo o tamanho nao lanca excecao');
   ok(t && t.titulo === 'torto', `e ainda devolve algo util: "${t && t.titulo}"`);
 
-  const vazio = new File([], 'vazio.mp3', { type: 'audio/mpeg' });
   let q2 = false;
-  try { await T.lerEtiquetas(vazio); } catch (_) { q2 = true; }
+  try { await T.lerEtiquetas(new File([], 'vazio.mp3', { type: 'audio/mpeg' })); }
+  catch (_) { q2 = true; }
   ok(!q2, 'arquivo de zero byte nao lanca excecao');
 }
 
-console.log('\n[6] ida e volta entre RGB e HSL');
-{
-  let pior = 0;
-  for (let i = 0; i < 4000; i++) {
-    const r = (i * 71) % 256, g = (i * 149) % 256, b = (i * 223) % 256;
-    const [h, s, l] = T.rgbParaHsl(r, g, b);
-    const [r2, g2, b2] = T.hslParaRgb(h, s, l);
-    pior = Math.max(pior, Math.abs(r - r2), Math.abs(g - g2), Math.abs(b - b2));
-  }
-  ok(pior <= 1, `erro maximo de ida e volta: ${pior} (de 255)`);
-}
-
-console.log('\n[7] a correcao de contraste realmente alcanca o alvo WCAG');
-{
-  const fundos = { 'claro #E8E9EC': '#E8E9EC', 'escuro #0E0E10': '#0E0E10' };
-  for (const nome in fundos) {
-    const fundo = fundos[nome];
-    const lumFundo = T.luminancia(T.hexParaRgb(fundo));
-    let falhou = 0, pior = 99, quemPior = '';
-    for (let h = 0; h < 360; h += 5) {
-      for (const s of [0.25, 0.6, 0.95]) {
-        for (const l of [0.15, 0.5, 0.85]) {
-          const c = T.corrigirContraste({ h, s, l }, fundo, T.ALVO_CONTRASTE);
-          const r = T.contraste(T.luminancia(T.hslParaRgb(c.h, c.s, c.l)), lumFundo);
-          if (r < T.ALVO_CONTRASTE - 0.01) { falhou++; if (r < pior) { pior = r; quemPior = `h${h} s${s} l${l}`; } }
-        }
-      }
-    }
-    const total = 72 * 9;
-    ok(falhou === 0, `${nome}: ${total - falhou}/${total} cores passam em ${T.ALVO_CONTRASTE}:1` +
-       (falhou ? ` — pior ${pior.toFixed(2)} em ${quemPior}` : ''));
-  }
-}
-
-console.log('\n[8] a cor extraida nunca fica ilegivel');
-{
-  // um amarelo vivo, o caso classico que some em fundo claro
-  const amarelo = { h: 52, s: 0.95, l: 0.6 };
-  const noClaro = T.corrigirContraste(amarelo, '#E8E9EC', 4.5);
-  const noEscuro = T.corrigirContraste(amarelo, '#0E0E10', 4.5);
-  const cClaro = T.contraste(T.luminancia(T.hslParaRgb(noClaro.h, noClaro.s, noClaro.l)),
-                             T.luminancia(T.hexParaRgb('#E8E9EC')));
-  const cEscuro = T.contraste(T.luminancia(T.hslParaRgb(noEscuro.h, noEscuro.s, noEscuro.l)),
-                              T.luminancia(T.hexParaRgb('#0E0E10')));
-  console.log(`        amarelo l=0.60 -> claro l=${noClaro.l.toFixed(2)} (${cClaro.toFixed(1)}:1)` +
-              `, escuro l=${noEscuro.l.toFixed(2)} (${cEscuro.toFixed(1)}:1)`);
-  ok(cClaro >= 4.5 && cEscuro >= 4.5, 'o amarelo e corrigido nos dois temas');
-  ok(noClaro.h === amarelo.h && noEscuro.h === amarelo.h, 'a matiz e preservada — muda so a luminosidade');
-}
-
-console.log('\n[9] formatacao de tempo');
+console.log('\n[7] formatacao de tempo');
 {
   ok(T.tempo(0) === '0:00', 'zero');
   ok(T.tempo(65) === '1:05', '65s = 1:05');

@@ -104,9 +104,14 @@ No navegador isso é a **Media Session API**: poucas linhas, e quase ninguém im
 
 No aplicativo Android o mesmo código **não faz nada** — e essa é a parte que só se descobre perguntando. Quem lê `navigator.mediaSession` e desenha aquele card é o *navegador*. Dentro de um WebView não há navegador, então não há quem leia. O card do aplicativo é montado em Java: uma `MediaSession` de verdade mais uma notificação `MediaStyle`, num **serviço de primeiro plano**.
 
-O serviço não é zelo excessivo. Sem ele o Android encerra o processo quando a tela apaga, e a música para sozinha no meio. Ele também segura o **foco de áudio**, que é o que faz a música pausar quando entra uma ligação e abaixar — não pausar — quando o mapa fala.
+O serviço não é zelo excessivo. Sem ele o Android encerra o processo quando a tela apaga, e a música para sozinha no meio.
 
 O `<audio>` continua morando no JavaScript; o Java não toca em som nenhum. O que atravessa a ponte é só o recado do que está tocando, e de volta o que o dedo apertou.
+
+> [!warning] O serviço não pede foco de áudio, e isso é deliberado
+> A primeira versão pedia, e o aplicativo pausava sozinho a cada play. Quem toca o som é o `<audio>` dentro do WebView, e **o WebView já pede foco de áudio por conta própria** quando a reprodução começa. Com o serviço pedindo também, viravam dois pedintes dentro do mesmo aplicativo — e quem pede por último tira o foco de quem pediu antes. Perdendo o serviço, o ouvinte dele mandava pausar; perdendo o WebView, ele pausava a mídia. Nas duas ordens dava no mesmo.
+>
+> Quem é dono do som é dono do foco. Há um teste que falha se `requestAudioFocus` voltar ao código, porque esse é o tipo de coisa que se reintroduz por boa intenção.
 
 > A ponte tem freio: o `timeupdate` dispara quatro vezes por segundo, e mandar tudo isso seria desperdício. A barra da tela de bloqueio anda sozinha, extrapolando da posição e da velocidade — só preciso corrigir de cinco em cinco segundos, e na hora exata em que algo muda de repente.
 

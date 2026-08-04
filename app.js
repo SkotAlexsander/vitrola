@@ -713,9 +713,13 @@ function contarAoSistema(forcar) {
 }
 
 /* O caminho de volta: o dedo tocou no card, ou no botão do fone. O Java não
-   tem como mandar em som nenhum — o <audio> vive aqui. */
-let volumeAntesDeAbaixar = 1;
+   tem como mandar em som nenhum — o <audio> vive aqui.
 
+   Só chegam comandos que vieram de FORA do aplicativo. O foco de áudio não
+   entra nesta lista de propósito: quem toca o som é o WebView, e é ele que
+   pede foco ao Android. Quando o serviço pedia também, eram dois pedintes
+   dentro do mesmo aplicativo, um tirava o foco do outro, e o resultado era
+   pausar a cada play. */
 window.__midia = function (qual, argumento) {
   switch (qual) {
     case 'tocar':    tocar(); break;
@@ -726,11 +730,6 @@ window.__midia = function (qual, argumento) {
       som.currentTime = Math.max(0, (Number(argumento) || 0) / 1000);
       break;
     case 'parar':    pausar(); som.currentTime = 0; break;
-
-    // outro aplicativo pediu passagem por um instante — o mapa falando,
-    // por exemplo. Abaixar e devolver é melhor que pausar e voltar.
-    case 'abaixar':  volumeAntesDeAbaixar = som.volume; som.volume = 0.25; break;
-    case 'levantar': som.volume = volumeAntesDeAbaixar; break;
   }
   contarAoSistema(true);
 };

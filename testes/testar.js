@@ -344,12 +344,16 @@ console.log('\n[9] a ponte da tela de bloqueio');
   ctxGlobal.window.__midia('buscar', -5000);
   ok(T.som.currentTime === 0, 'buscar negativo nao vira tempo negativo');
 
-  ctxGlobal.window.__midia('abaixar', 0);
-  ok(T.som.volume === 0.25, 'outro app pediu passagem: abaixa em vez de pausar');
-  ctxGlobal.window.__midia('levantar', 0);
-  ok(T.som.volume === 1, 'e devolve o volume depois');
-
   ok(ctxGlobal.window.__midia('quenaoexiste', 0) === undefined, 'comando desconhecido nao derruba');
+
+  // O foco de audio NAO pode estar aqui. Quem toca o som e o WebView, e e
+  // ele que pede foco ao Android; com o servico pedindo tambem, um tirava
+  // o foco do outro dentro do mesmo aplicativo e a musica pausava a cada
+  // play. Este teste existe para nao voltar a acontecer por distracao.
+  const fonte = require('fs').readFileSync(ARQ, 'utf8');
+  ok(!/case 'abaixar'|case 'levantar'/.test(fonte),
+     'nao ha comando de foco de audio na ponte');
+  ok(!/requestAudioFocus/.test(fonte), 'e o app nao pede foco de audio');
 }
 
 console.log('\n' + (falhas === 0 ? 'TUDO PASSOU' : `${falhas} FALHA(S)`));

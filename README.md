@@ -17,6 +17,10 @@ Toca os MP3 do seu computador. Lê as etiquetas do arquivo, tira a cor que manda
 
 **HTML, CSS e JavaScript puros** — sem biblioteca, sem build, sem servidor. Nada sai da sua máquina: não há upload, porque não há para onde subir.
 
+### ▶ [Abrir a Vitrola](https://skotalexsander.github.io/vitrola/)
+
+No celular, o navegador oferece instalar na tela inicial. Aí ela abre em tela cheia, funciona sem rede e aparece na folha de compartilhamento junto dos outros aplicativos.
+
 | Arquivo | O que é |
 |---|---|
 | [index.html](index.html) | A página |

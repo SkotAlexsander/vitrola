@@ -428,23 +428,53 @@ function filtradas() {
    6. ÁUDIO
    ========================================================================= */
 
-let ac = null, analisador = null, espectro = null;
+let ac = null, analisador = null, espectro = null, audioDesistiu = false;
 
+/* Liga o analisador — mas só depois de CONFIRMAR que o contexto está
+   rodando, e este cuidado é o mais importante do arquivo.
+
+   `createMediaElementSource` é irreversível: uma vez que o <audio> passa
+   pelo grafo, ele só sai por ali. Se o contexto estiver suspenso — coisa
+   comum dentro de um WebView — a música toca em SILÊNCIO ABSOLUTO, com o
+   botão dizendo que está tocando e a barra andando. É o pior defeito
+   possível, porque não parece defeito.
+
+   Então: se o contexto não subir, desisto do analisador e deixo o áudio
+   tocar direto. Perde-se o brilho reagindo à música. Não se perde o som. */
 function ligarAudio() {
-  if (ac) return true;
+  if (ac || audioDesistiu) return;
   const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return false;
-  try {
-    ac = new AC();
-    const fonte = ac.createMediaElementSource(som);   // só pode uma vez
-    analisador = ac.createAnalyser();
-    analisador.fftSize = 1024;
-    analisador.smoothingTimeConstant = 0.8;
-    fonte.connect(analisador);
-    analisador.connect(ac.destination);
-    espectro = new Uint8Array(analisador.frequencyBinCount);
-    return true;
-  } catch (_) { ac = null; return false; }
+  if (!AC) { audioDesistiu = true; return; }
+
+  let ctx;
+  try { ctx = new AC(); } catch (_) { audioDesistiu = true; return; }
+
+  const desistir = () => {
+    try { ctx.close(); } catch (_) {}
+    audioDesistiu = true;
+  };
+
+  const seguir = () => {
+    if (ctx.state !== 'running') return desistir();
+    try {
+      const fonte = ctx.createMediaElementSource(som);   // só pode uma vez
+      const an = ctx.createAnalyser();
+      an.fftSize = 1024;
+      an.smoothingTimeConstant = 0.8;
+      fonte.connect(an);
+      an.connect(ctx.destination);
+      ac = ctx;
+      analisador = an;
+      espectro = new Uint8Array(an.frequencyBinCount);
+    } catch (_) { desistir(); }
+  };
+
+  if (ctx.state === 'suspended') {
+    const p = ctx.resume();
+    if (p && p.then) p.then(seguir, desistir); else seguir();
+  } else {
+    seguir();
+  }
 }
 
 function acordarAudio() { if (ac && ac.state === 'suspended') ac.resume(); }
@@ -573,6 +603,15 @@ function fecharMenu() {
   $('menu').hidden = true;
   $('btn-menu').setAttribute('aria-expanded', 'false');
 }
+
+/* O botão físico de voltar do Android pergunta à página antes de fechar o
+   aplicativo. Sem isto, voltar no meio do player sairia direto do app —
+   que é o contrário do que a seta na tela faz. Devolve true quando tratou. */
+window.__voltar = function () {
+  if (!$('menu').hidden) { fecharMenu(); return true; }
+  if (estado.vista === 'tocando') { irPara('biblioteca'); return true; }
+  return false;
+};
 
 /* ---- tema: escuro e claro, à escolha ----
    O verde-limão não muda de valor quando é PREENCHIMENTO (com texto

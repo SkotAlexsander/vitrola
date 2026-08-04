@@ -173,7 +173,11 @@
 
 <div class="cortina" id="cortina" hidden aria-hidden="true"><p>Solte para tocar</p></div>
 
-<input type="file" id="arquivos" accept="audio/*,.mp3,.m4a,.ogg,.flac,.wav" multiple hidden>
+<!-- só "audio/*": misturar extensões aqui produz um filtro que alguns
+     gerenciadores de arquivo do Android não entendem, e o seletor abre
+     vazio. A conferência por extensão é feita no JS, que também cobre o
+     arrastar-e-soltar no computador. -->
+<input type="file" id="arquivos" accept="audio/*" multiple hidden>
 <audio id="som"></audio>
 <p id="aviso" class="sr-only" role="status" aria-live="polite"></p>
 

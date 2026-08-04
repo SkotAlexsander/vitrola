@@ -253,16 +253,30 @@ public class MainActivity extends Activity {
                     aoEscolherArquivos.onReceiveValue(null);
                 }
                 aoEscolherArquivos = retorno;
+
+                // Monto o pedido a mao em vez de confiar no createIntent():
+                // ele monta o filtro a partir do atributo accept do HTML, e
+                // em alguns aparelhos isso abre um seletor VAZIO. Se este
+                // falhar, ai sim caio no que o WebView sugeria.
+                Intent meu = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                meu.addCategory(Intent.CATEGORY_OPENABLE);
+                meu.setType("audio/*");
+                meu.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 try {
-                    Intent i = parametros.createIntent();
-                    i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                    i.addCategory(Intent.CATEGORY_OPENABLE);
-                    startActivityForResult(
-                            Intent.createChooser(i, "Escolher músicas"), PEDIDO_ARQUIVO);
+                    startActivityForResult(meu, PEDIDO_ARQUIVO);
                     return true;
-                } catch (Exception e) {
-                    aoEscolherArquivos = null;
-                    return false;
+                } catch (Exception primeiro) {
+                    try {
+                        Intent reserva = parametros.createIntent();
+                        reserva.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                        startActivityForResult(
+                                Intent.createChooser(reserva, "Escolher músicas"),
+                                PEDIDO_ARQUIVO);
+                        return true;
+                    } catch (Exception segundo) {
+                        aoEscolherArquivos = null;
+                        return false;
+                    }
                 }
             }
         });
@@ -285,13 +299,25 @@ public class MainActivity extends Activity {
         aoEscolherArquivos = null;
     }
 
+    /**
+     * O botao fisico de voltar pergunta a pagina primeiro. E uma pagina so,
+     * sem historico de navegacao, entao sem isto voltar sairia do aplicativo
+     * mesmo estando no player — o contrario do que a seta na tela faz.
+     */
     @Override
     public void onBackPressed() {
-        if (web != null && web.canGoBack()) {
-            web.goBack();
-        } else {
-            super.onBackPressed();
-        }
+        if (web == null) { super.onBackPressed(); return; }
+        web.evaluateJavascript(
+                "(window.__voltar && window.__voltar()) ? 'sim' : 'nao'",
+                new android.webkit.ValueCallback<String>() {
+                    @Override public void onReceiveValue(String r) {
+                        if (r == null || !r.contains("sim")) fechar();
+                    }
+                });
+    }
+
+    private void fechar() {
+        moveTaskToBack(true);   // sai sem destruir: voltar retoma onde parou
     }
 
     @Override

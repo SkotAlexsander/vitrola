@@ -565,7 +565,19 @@ function desenharOnda() {
 
   const f = faixaAtual();
   const meio = a / 2;
-  const prog = f && som.duration ? som.currentTime / som.duration : 0;
+
+  // Sem faixa: um fio no centro, e só. Antes eu desenhava barrinhas de
+  // amplitude fixa aqui, e o resultado parecia chuvisco de televisão
+  // quebrada. Vazio de verdade também não serve — abre um buraco na
+  // composição. O fio diz "aqui é a barra de progresso" sem mentir.
+  if (!f) {
+    ctx.fillStyle = corOndaOff;
+    ctx.fillRect(0, meio - Math.max(1, d / 2), l, Math.max(1, d));
+    return;
+  }
+
+  const prog = som.duration ? som.currentTime / som.duration : 0;
+
   const corte = l * prog;
 
   const largura = 2 * d;
@@ -779,10 +791,19 @@ function pintarAgora() {
   document.title = f ? `${f.tags.titulo} — ${f.tags.artista}` : 'Vitrola';
 }
 
+/* `elemento.hidden = true` NÃO funciona em SVG: `hidden` é propriedade de
+   HTMLElement, e num SVGElement a atribuição só cria uma propriedade solta
+   que nunca vira atributo. O resultado é play e pausa desenhados juntos —
+   e nenhum teste de lógica pega isso, porque a lógica está certa.
+   `toggleAttribute` mexe no atributo de verdade, em qualquer elemento. */
+function mostrar(el, visivel) {
+  if (el) el.toggleAttribute('hidden', !visivel);
+}
+
 function pintarBotaoTocar() {
   const tocando = !som.paused;
-  $('icone-tocar').hidden = tocando;
-  $('icone-pausa').hidden = !tocando;
+  mostrar($('icone-tocar'), !tocando);
+  mostrar($('icone-pausa'), tocando);
   $('btn-tocar').setAttribute('aria-label', tocando ? 'Pausar' : 'Tocar');
 }
 
@@ -948,8 +969,8 @@ volume.addEventListener('input', () => {
 
 function pintarMudo() {
   const mudo = som.muted || som.volume === 0;
-  $('icone-som').hidden = mudo;
-  $('icone-mudo').hidden = !mudo;
+  mostrar($('icone-som'), !mudo);
+  mostrar($('icone-mudo'), mudo);
   $('btn-mudo').setAttribute('aria-label', mudo ? 'Voltar o som' : 'Sem som');
 }
 

@@ -19,6 +19,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
 
+<!-- prévia do link no WhatsApp, LinkedIn e afins. Sem isto, o link
+     compartilhado aparece como retângulo cinza sem nada. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Vitrola">
+<meta property="og:description" content="Toca os MP3 do seu aparelho. Lê as etiquetas, tira a cor da capa e tematiza a interface inteira com ela.">
+<meta property="og:url" content="https://skotalexsander.github.io/vitrola/">
+<meta property="og:image" content="https://skotalexsander.github.io/vitrola/capturas/desktop-escuro.png">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary_large_image">
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,7 +43,7 @@
       <button type="button" id="btn-tema" class="btn-texto" aria-label="Alternar entre claro e escuro">
         <span id="rotulo-tema">Escuro</span>
       </button>
-      <button type="button" id="btn-abrir" class="btn-solido">Adicionar músicas</button>
+      <button type="button" id="btn-abrir" class="btn-linha">Adicionar músicas</button>
       <input type="file" id="arquivos" accept="audio/*,.mp3,.m4a,.ogg,.flac,.wav" multiple hidden>
     </div>
   </header>

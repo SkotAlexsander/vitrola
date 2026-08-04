@@ -20,6 +20,7 @@ function elFalso(id) {
     width: 800, height: 100,
     addEventListener: noop, removeEventListener: noop, setAttribute: noop,
     getAttribute: () => null, hasAttribute: () => false, removeAttribute: noop,
+    toggleAttribute: noop,
     appendChild: noop, append: noop, closest: () => null, click: noop,
     setPointerCapture: noop, releasePointerCapture: noop,
     play: () => Promise.resolve(), pause: noop, load: noop,

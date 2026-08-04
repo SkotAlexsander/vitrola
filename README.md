@@ -21,6 +21,12 @@ Toca os MP3 do seu computador. Lê as etiquetas do arquivo, tira a cor que manda
 
 No celular, o navegador oferece instalar na tela inicial. Aí ela abre em tela cheia, funciona sem rede e aparece na folha de compartilhamento junto dos outros aplicativos.
 
+![A Vitrola no tema escuro, com a fila vazia](capturas/desktop-escuro.png)
+
+| Tema claro | No celular |
+|---|---|
+| ![Tema claro](capturas/desktop-claro.png) | ![No celular](capturas/celular.png) |
+
 | Arquivo | O que é |
 |---|---|
 | [index.html](index.html) | A página |

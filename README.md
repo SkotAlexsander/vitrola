@@ -96,9 +96,25 @@ Não é desenho decorativo. A faixa é decodificada e reduzida a mil picos reais
 
 Ela é decodificada num `OfflineAudioContext` descartável, de propósito: usar o contexto de reprodução ali seria uma armadilha, porque ele nasceria fora de um clique, e um `AudioContext` suspenso com o `<audio>` ligado nele **toca em silêncio**.
 
-### Media Session
+### A tela de bloqueio, e por que ela precisou de duas implementações
 
-Capa, título e artista aparecem **na tela de bloqueio do celular**, com os controles do sistema funcionando — inclusive arrastar a posição. São poucas linhas e quase ninguém implementa.
+Capa, título e artista aparecem **na tela de bloqueio** e na aba de notificação, com os controles do sistema funcionando — inclusive arrastar a posição.
+
+No navegador isso é a **Media Session API**: poucas linhas, e quase ninguém implementa.
+
+No aplicativo Android o mesmo código **não faz nada** — e essa é a parte que só se descobre perguntando. Quem lê `navigator.mediaSession` e desenha aquele card é o *navegador*. Dentro de um WebView não há navegador, então não há quem leia. O card do aplicativo é montado em Java: uma `MediaSession` de verdade mais uma notificação `MediaStyle`, num **serviço de primeiro plano**.
+
+O serviço não é zelo excessivo. Sem ele o Android encerra o processo quando a tela apaga, e a música para sozinha no meio. Ele também segura o **foco de áudio**, que é o que faz a música pausar quando entra uma ligação e abaixar — não pausar — quando o mapa fala.
+
+O `<audio>` continua morando no JavaScript; o Java não toca em som nenhum. O que atravessa a ponte é só o recado do que está tocando, e de volta o que o dedo apertou.
+
+> A ponte tem freio: o `timeupdate` dispara quatro vezes por segundo, e mandar tudo isso seria desperdício. A barra da tela de bloqueio anda sozinha, extrapolando da posição e da velocidade — só preciso corrigir de cinco em cinco segundos, e na hora exata em que algo muda de repente.
+
+### Consertar o nome na mão
+
+Etiqueta de MP3 mente. O botão de lápis em cada faixa abre um campo para corrigir título e artista, e a correção fica valendo depois de fechar o aplicativo.
+
+Antes de precisar dele, o leitor tenta sozinho: **o embaralhamento mais comum não deixa losango nenhum.** Um arquivo gravado em UTF-8 mas etiquetado como latin1 vira `AÃ§Ã£o` — todo caractere imprimível, nada que um contador de caracteres estranhos ache errado. Só o olho humano vê. Então esse caso é pego por outra pergunta: *os bytes formam UTF-8 válido?* Texto latin1 de verdade quase nunca passa nesse teste por acaso — as sequências de vários bytes do UTF-8 são exigentes demais para sair por acidente.
 
 ### É um aplicativo de celular
 
@@ -126,6 +142,7 @@ Duas decisões de produto que valem dizer:
 ### Some mais
 
 - **A fila sobrevive ao recarregar** — os arquivos ficam no IndexedDB do navegador
+- Corrigir título e artista na mão, pelo lápis de cada faixa
 - Arrastar e soltar em qualquer lugar da página
 - Tema claro e escuro, com preferência do sistema respeitada e botão que vence nos dois sentidos
 - Aleatório, repetir tudo, repetir uma
@@ -151,8 +168,12 @@ node testes/testar.js
 | Correção de contraste — **648/648** cores chegam a 4,5:1, nos dois temas | ✅ |
 | Formatação de tempo, inclusive `NaN` e negativo | ✅ |
 | Todo par frente/fundo dos tokens, medido nos dois temas | ✅ 13/13 |
+| UTF-8 etiquetado como latin1 é desembaralhado, e latin1 de verdade não | ✅ 10/10 |
+| A ponte da tela de bloqueio: milissegundos, freio, `NaN`, comando desconhecido | ✅ 15/15 |
 
-**Não verificado:** som, o desenho da onda e do espectro, Media Session no celular e o toque. Isso só olhando.
+E o botão de lápis, medido no Chrome de verdade em vez de deduzido: alvo de 44×44, alcança o teclado, e clicar nele **não** dispara a música da linha.
+
+**Não verificado:** som, o desenho da onda e do espectro, o card na tela de bloqueio de um aparelho real e o toque. Isso só olhando — e o aparelho é seu.
 
 ---
 

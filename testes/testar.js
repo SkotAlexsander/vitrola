@@ -45,7 +45,7 @@ function ctxFalso() {
 }
 
 const ctxGlobal = {
-  console, Blob, File, TextDecoder, Uint8Array, Uint8ClampedArray, Promise, Math, JSON,
+  console, Blob, File, TextDecoder, Uint8Array, Uint8ClampedArray, Promise, Math, JSON, Date,
   setTimeout, clearTimeout, requestAnimationFrame: noop,
   Audio: function () { return elFalso('sonda'); },
   Image: function () { return elFalso('img'); },
@@ -73,7 +73,8 @@ vm.createContext(ctxGlobal);
 
 let src = fs.readFileSync(ARQ, 'utf8');
 src += `
-;globalThis.__t = { lerEtiquetas, lerID3v2, lerID3v1, sincroSeguro, tempo };`;
+;globalThis.__t = { lerEtiquetas, lerID3v2, lerID3v1, sincroSeguro, tempo, decodificar,
+                    contarEstranhos, estado, som, contarAoSistema, faixaAtual };`;
 vm.runInContext(src, ctxGlobal, { filename: 'app.js' });
 const T = ctxGlobal.__t;
 
@@ -259,6 +260,96 @@ console.log('\n[7] formatacao de tempo');
   ok(T.tempo(3599) === '59:59', '3599s = 59:59');
   ok(T.tempo(NaN) === '0:00', 'NaN nao vira "NaN:NaN"');
   ok(T.tempo(-5) === '0:00', 'negativo vira zero');
+}
+
+console.log('\n[8] etiqueta que mente a codificacao');
+{
+  const u8 = s => new Uint8Array(Buffer.from(s, 'utf8'));
+  const l1 = s => new Uint8Array(Buffer.from(s, 'latin1'));
+
+  // O caso classico: gravado em UTF-8, etiquetado como latin1 (enc 0).
+  // Sem o teste de validade sairia "AÃ§Ã£o" — imprimivel, e errado.
+  ok(T.decodificar(u8('Ação'), 0) === 'Ação', 'UTF-8 rotulado como latin1 e desembaralhado');
+  ok(T.decodificar(u8('Björk'), 0) === 'Björk', 'idem, com trema');
+  ok(T.decodificar(u8('日本語'), 0) === '日本語', 'idem, fora do alfabeto latino');
+
+  // E o contrario nao pode acontecer: latin1 de verdade continua latin1.
+  ok(T.decodificar(l1('Ação'), 0) === 'Ação', 'latin1 de verdade nao e reinterpretado');
+  ok(T.decodificar(l1('Cafe'), 0) === 'Cafe', 'ASCII puro passa intacto');
+  ok(T.decodificar(u8('Ação'), 3) === 'Ação', 'UTF-8 declarado corretamente continua certo');
+
+  // Bytes que nao sao UTF-8 valido, mas declarados como UTF-8: viram
+  // losango. A tentativa alternativa tem de achar leitura melhor.
+  const quebrado = new Uint8Array([0xC3, 0xE7, 0xE3, 0x6F]);
+  const r = T.decodificar(quebrado, 3);
+  ok(T.contarEstranhos(r) === 0, 'bytes invalidos em UTF-8 nao ficam com losango: "' + r + '"');
+
+  ok(T.contarEstranhos('ok') === 0, 'contador nao acusa texto limpo');
+  ok(T.contarEstranhos('a�b') === 1, 'contador acha o losango');
+  ok(T.contarEstranhos('linha\nnova\ttab') === 0, 'quebra de linha e tab nao sao estranhos');
+}
+
+console.log('\n[9] a ponte da tela de bloqueio');
+{
+  // No navegador window.Sistema nao existe e nada disto acontece. Aqui eu
+  // finjo o lado Java para conferir o que sai pela ponte.
+  const recados = [];
+  let parou = 0;
+  ctxGlobal.window.Sistema = {
+    midia: (t, a, al, tocando, dur, pos, capa) =>
+      recados.push({ t, a, al, tocando, dur, pos, capa }),
+    pararMidia: () => parou++,
+  };
+
+  const tags = { titulo: 'Construção', artista: 'Chico Buarque', album: 'Construção' };
+  T.estado.fila.push({ id: 1, arquivo: null, tags, tagsCruas: tags, capaBlob: null,
+                       letra: null, capaURL: null, url: null, dur: 383, curtida: false });
+  T.estado.atual = 0;
+  T.som.duration = 383;
+  T.som.currentTime = 12.5;
+  T.som.paused = false;
+
+  T.contarAoSistema(true);
+  const r = recados[recados.length - 1];
+  ok(recados.length === 1, 'o recado sai pela ponte');
+  ok(r && r.t === 'Construção', 'titulo vai com acento inteiro: "' + (r && r.t) + '"');
+  ok(r && r.a === 'Chico Buarque', 'artista vai junto');
+  ok(r && r.tocando === true, 'diz que esta tocando');
+  ok(r && r.dur === 383000, 'duracao em MILISSEGUNDOS (' + (r && r.dur) + '), que e o que o Android quer');
+  ok(r && r.pos === 12500, 'posicao idem (' + (r && r.pos) + ')');
+
+  // o freio: timeupdate dispara ~4x por segundo e nao pode atravessar tudo
+  T.contarAoSistema(false);
+  T.contarAoSistema(false);
+  ok(recados.length === 1, 'sem forcar, o freio segura os recados repetidos');
+  T.contarAoSistema(true);
+  ok(recados.length === 2, 'forcando, passa na hora');
+
+  // duracao ainda desconhecida nao pode virar NaN do outro lado
+  T.som.duration = NaN;
+  T.contarAoSistema(true);
+  ok(recados[recados.length - 1].dur === 0, 'duracao desconhecida vira 0, nao NaN');
+  T.som.duration = 383;
+
+  // sem faixa, o card tem de sumir
+  T.estado.atual = -1;
+  T.contarAoSistema(true);
+  ok(parou === 1, 'sem faixa, manda tirar o card');
+  T.estado.atual = 0;
+
+  // e o caminho de volta
+  T.som.currentTime = 0;
+  ctxGlobal.window.__midia('buscar', 90000);
+  ok(T.som.currentTime === 90, 'buscar converte de milissegundo para segundo');
+  ctxGlobal.window.__midia('buscar', -5000);
+  ok(T.som.currentTime === 0, 'buscar negativo nao vira tempo negativo');
+
+  ctxGlobal.window.__midia('abaixar', 0);
+  ok(T.som.volume === 0.25, 'outro app pediu passagem: abaixa em vez de pausar');
+  ctxGlobal.window.__midia('levantar', 0);
+  ok(T.som.volume === 1, 'e devolve o volume depois');
+
+  ok(ctxGlobal.window.__midia('quenaoexiste', 0) === undefined, 'comando desconhecido nao derruba');
 }
 
 console.log('\n' + (falhas === 0 ? 'TUDO PASSOU' : `${falhas} FALHA(S)`));

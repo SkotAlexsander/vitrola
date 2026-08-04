@@ -73,9 +73,71 @@ function sincroSeguro(b, i) {
          ((b[i + 2] & 0x7f) << 7) | (b[i + 3] & 0x7f);
 }
 
+/** Quantos caracteres "estranhos" (substituição, controle, privados) o
+    texto tem — serve pra saber se a decodificação deu certo de verdade,
+    e não só sem lançar erro. */
+function contarEstranhos(s) {
+  let n = 0;
+  for (const ch of s) {
+    const c = ch.codePointAt(0);
+    if (c === 0xFFFD || (c >= 0xE000 && c <= 0xF8FF) || (c < 32 && c !== 9 && c !== 10 && c !== 13)) n++;
+  }
+  return n;
+}
+
+/** O embaralhamento mais comum de todos NÃO deixa losango nenhum: um
+    arquivo gravado em UTF-8 mas etiquetado como latin1 vira "AÃ§Ã£o" —
+    todo caractere imprimível, nada que o contador ache estranho. Só o
+    olho humano vê. Então esse caso é pego antes, por outra pergunta:
+    os bytes formam UTF-8 VÁLIDO? O modo fatal do TextDecoder lança se
+    não formarem. Texto latin1 de verdade quase nunca passa nesse teste
+    por acaso — as sequências de vários bytes do UTF-8 são exigentes
+    demais para sair por acidente. */
+function pareceUtf8(bytes) {
+  let temMultibyte = false;
+  for (let i = 0; i < bytes.length; i++) if (bytes[i] >= 0x80) { temMultibyte = true; break; }
+  if (!temMultibyte) return null;          // só ASCII: os dois alfabetos concordam
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+  catch (_) { return null; }
+}
+
+/** Tenta decodificar do jeito que a etiqueta diz, e se o resultado vier
+    cheio de caractere de substituição (aquele losango ou o quadrado
+    vazio), tenta de novo como se os bytes fossem de outro alfabeto — é
+    comum um programa gravar encoding 0 (windows-1252) num texto que na
+    verdade é UTF-8 ou vem de um alfabeto do Leste Asiático. Fica com a
+    leitura que tiver menos caractere estranho. */
 function decodificar(bytes, enc) {
-  try { return new TextDecoder(ROTULO_ENC[enc] || 'utf-8').decode(bytes); }
-  catch (_) { return latim(bytes, 0, bytes.length); }
+  const rotulo = ROTULO_ENC[enc] || 'utf-8';
+  let melhor = '', poucosEstranhos = Infinity;
+
+  if (rotulo === 'windows-1252') {
+    const utf8 = pareceUtf8(bytes);
+    if (utf8 !== null && contarEstranhos(utf8) === 0) return utf8;
+  }
+
+  try {
+    const s = new TextDecoder(rotulo).decode(bytes);
+    const e = contarEstranhos(s);
+    if (e === 0) return s;              // já veio limpo, nem precisa tentar mais nada
+    melhor = s; poucosEstranhos = e;
+  } catch (_) {}
+
+  const tentativas = rotulo === 'utf-8'
+    ? ['windows-1252', 'gbk', 'shift-jis', 'euc-kr', 'big5']
+    : ['utf-8', 'gbk', 'shift-jis', 'euc-kr', 'big5', 'windows-1252'];
+
+  for (const alt of tentativas) {
+    try {
+      const s = new TextDecoder(alt).decode(bytes);
+      const e = contarEstranhos(s);
+      if (e < poucosEstranhos) { melhor = s; poucosEstranhos = e; }
+      if (e === 0) break;
+    } catch (_) {}
+  }
+
+  if (melhor) return melhor;
+  return latim(bytes, 0, bytes.length);
 }
 
 function textoDoQuadro(corpo) {
@@ -586,6 +648,93 @@ function posicaoNoSistema() {
   } catch (_) {}
 }
 
+/* ---- o card da tela de bloqueio, no aplicativo Android ----
+
+   Tudo o que está acima serve ao NAVEGADOR: quem lê `navigator.mediaSession`
+   e desenha o card é o Chrome. Dentro do aplicativo não há navegador — há um
+   WebView — e ninguém lê aquilo. Por isso o card do aplicativo é montado em
+   Java, pelo ServicoMidia, e esta parte só conta a ele o que está tocando.
+
+   Nos dois lados o mesmo código roda: no navegador `Sistema` não existe e
+   estas funções não fazem nada. */
+
+function ponteDoSistema() {
+  const s = window.Sistema;
+  return (s && typeof s.midia === 'function') ? s : null;
+}
+
+/** A capa vai para o Java como JPEG em base64. Reduzida a 320px de
+    propósito: a original pode ter 1500px e passar isso pela ponte a cada
+    troca de faixa é caro à toa — na tela de bloqueio ela nunca aparece
+    maior que a largura do aparelho. */
+function capaParaOSistema(f) {
+  if (!f || f.capaAviso !== undefined) return;   // já resolvida, ou já se sabe que não há
+  f.capaAviso = null;
+  if (!f.capaURL || !ponteDoSistema()) return;
+
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const L = 320;
+      const c = document.createElement('canvas');
+      c.width = c.height = L;
+      c.getContext('2d').drawImage(img, 0, 0, L, L);
+      f.capaAviso = c.toDataURL('image/jpeg', 0.85).replace(/^data:[^,]*,/, '');
+      if (faixaAtual() === f) contarAoSistema(true);
+    } catch (_) {}
+  };
+  img.onerror = () => {};
+  img.src = f.capaURL;
+}
+
+let ultimoRecado = 0;
+
+/** `forcar` para o que muda de repente — tocar, pausar, trocar de faixa,
+    arrastar. Sem ele, o timeupdate dispararia isto uma vez a cada 250ms, e
+    não adianta: o card anda a barra sozinho, extrapolando da posição e da
+    velocidade que já mandei. Só preciso corrigir de vez em quando. */
+function contarAoSistema(forcar) {
+  const p = ponteDoSistema();
+  if (!p) return;
+
+  const f = faixaAtual();
+  if (!f) { try { p.pararMidia(); } catch (_) {} return; }
+
+  const agora = (new Date()).getTime();
+  if (!forcar && agora - ultimoRecado < 5000) return;
+  ultimoRecado = agora;
+
+  const dur = isFinite(som.duration) && som.duration > 0 ? Math.round(som.duration * 1000) : 0;
+  const pos = isFinite(som.currentTime) ? Math.round(som.currentTime * 1000) : 0;
+  try {
+    p.midia(f.tags.titulo || '', f.tags.artista || '', f.tags.album || '',
+            !som.paused, dur, pos, f.capaAviso || '');
+  } catch (_) {}
+}
+
+/* O caminho de volta: o dedo tocou no card, ou no botão do fone. O Java não
+   tem como mandar em som nenhum — o <audio> vive aqui. */
+let volumeAntesDeAbaixar = 1;
+
+window.__midia = function (qual, argumento) {
+  switch (qual) {
+    case 'tocar':    tocar(); break;
+    case 'pausar':   pausar(); break;
+    case 'proxima':  pular(1); break;
+    case 'anterior': pular(-1); break;
+    case 'buscar':
+      som.currentTime = Math.max(0, (Number(argumento) || 0) / 1000);
+      break;
+    case 'parar':    pausar(); som.currentTime = 0; break;
+
+    // outro aplicativo pediu passagem por um instante — o mapa falando,
+    // por exemplo. Abaixar e devolver é melhor que pausar e voltar.
+    case 'abaixar':  volumeAntesDeAbaixar = som.volume; som.volume = 0.25; break;
+    case 'levantar': som.volume = volumeAntesDeAbaixar; break;
+  }
+  contarAoSistema(true);
+};
+
 
 /* ===========================================================================
    9. TELAS E DESENHO
@@ -642,6 +791,7 @@ function aplicarTema(t) {
 
 const D_CORACAO = 'M12 20.5S3.5 15 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 5.8-8.5 11.3-8.5 11.3z';
 const D_DISCO   = 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 7.2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z';
+const D_LAPIS   = 'M4 17.25V20h2.75L16.81 9.94l-2.75-2.75L4 17.25zM18.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z';
 
 function pintarLista() {
   const ol = $('lista');
@@ -675,6 +825,7 @@ function pintarLista() {
     }
 
     const li = document.createElement('li');
+    li.className = 'item-linha';
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'item';
@@ -709,6 +860,20 @@ function pintarLista() {
       'De ' + f.tags.artista + (f.dur ? '  ·  ' + tempo(f.dur) : '')));
     txt.append(tit, sub);
 
+    /* O lápis é IRMÃO da linha, não filho: botão dentro de botão é HTML
+       inválido, e o preço apareceu na medição — o Chrome recusa foco no de
+       dentro, então pelo teclado esse botão simplesmente não existia. Fica
+       flutuando sobre a terceira coluna, que o grid deixa reservada e vazia
+       justamente para ele. */
+    const editar = document.createElement('button');
+    editar.type = 'button';
+    editar.className = 'item-editar';
+    editar.dataset.i = i;
+    editar.setAttribute('aria-label', 'Corrigir nome de "' + f.tags.titulo + '"');
+    editar.appendChild(svgDe(D_LAPIS, true));
+
+    const vao = document.createElement('span');   // o lugar do lápis no grid
+
     const play = document.createElement('span');
     play.className = 'item-play';
     play.appendChild(svgDe('M8 5v14l11-7z', true));
@@ -717,8 +882,8 @@ function pintarLista() {
       f.tags.titulo + ', de ' + f.tags.artista + (f.dur ? ', ' + tempo(f.dur) : '') +
       (f.curtida ? ', curtida' : ''));
 
-    b.append(capa, txt, play);
-    li.appendChild(b);
+    b.append(capa, txt, vao, play);
+    li.append(b, editar);
     ol.appendChild(li);
   }
 }
@@ -857,6 +1022,8 @@ async function carregar(i, tocarDepois) {
   pintarLista();
   pintarLetra(true);
   anunciarAoSistema(f);
+  capaParaOSistema(f);
+  contarAoSistema(true);
   avisar(f.tags.titulo + ', de ' + f.tags.artista);
 
   if (f.capaURL) {
@@ -887,13 +1054,47 @@ function pular(passo) {
   carregar(i, true);
 }
 
+/** Abre um mini-formulário pra corrigir título e artista na mão — serve
+    tanto pra traduzir/renomear como quiser, quanto pra consertar etiqueta
+    que veio com encoding errado (aqueles quadrados ██ no lugar do texto).
+    A correção fica valendo mesmo depois de fechar o app. */
+function corrigirNome(i) {
+  const f = estado.fila[i];
+  if (!f) return;
+
+  const novoTitulo = window.prompt('Título da música:', f.tags.titulo);
+  if (novoTitulo === null) return;               // cancelou
+  const novoArtista = window.prompt('Nome do artista:', f.tags.artista);
+  if (novoArtista === null) return;               // cancelou
+
+  const t = novoTitulo.trim(), a = novoArtista.trim();
+  f.tags.titulo  = t || f.tags.titulo;
+  f.tags.artista = a || f.tags.artista;
+
+  persistir(f);
+
+  pintarLista();
+  pintarAgora();
+  avisar('Nome corrigido.');
+}
+
+/** Regrava a faixa no banco INTEIRA. O put() do IndexedDB substitui o
+    registro, não remenda: montar o objeto na mão em cada lugar que altera
+    algo faz o campo esquecido sumir em silêncio — foi assim que curtir uma
+    música apagava a letra dela, e só se via na próxima vez que o app abria. */
+function persistir(f) {
+  if (f.id == null) return;
+  regravar({
+    id: f.id, arquivo: f.arquivo, tags: f.tags, capa: f.capaBlob,
+    letra: f.letra, curtida: f.curtida,
+  });
+}
+
 function alternarCurtida() {
   const f = faixaAtual();
   if (!f) return;
   f.curtida = !f.curtida;
-  if (f.id != null) {
-    regravar({ id: f.id, arquivo: f.arquivo, tags: f.tagsCruas, capa: f.capaBlob, curtida: f.curtida });
-  }
+  persistir(f);
   pintarAgora();
   pintarLista();
   avisar(f.curtida ? 'Curtida' : 'Descurtida');
@@ -1001,6 +1202,8 @@ for (const c of document.querySelectorAll('.chip')) {
 
 /* --- lista --- */
 $('lista').addEventListener('click', e => {
+  const editar = e.target.closest('.item-editar');
+  if (editar) { e.stopPropagation(); corrigirNome(Number(editar.dataset.i)); return; }
   const b = e.target.closest('.item');
   if (b) { carregar(Number(b.dataset.i), true); irPara('tocando'); }
 });
@@ -1048,6 +1251,7 @@ $('btn-limpar').addEventListener('click', async () => {
   await esquecerTudo();
   fecharMenu();
   pintarLista(); pintarAgora(); pintarBotaoTocar(); pintarProgresso();
+  contarAoSistema(true);          // sem faixa, isso tira o card da tela de bloqueio
   avisar('Biblioteca esvaziada.');
 });
 
@@ -1124,16 +1328,19 @@ window.addEventListener('keydown', e => {
 }, { passive: false });
 
 /* --- eventos do áudio --- */
-som.addEventListener('play', () => { acordarAudio(); pintarBotaoTocar(); });
+som.addEventListener('play', () => { acordarAudio(); pintarBotaoTocar(); contarAoSistema(true); });
 som.addEventListener('playing', acordarAudio);
-som.addEventListener('pause', pintarBotaoTocar);
+som.addEventListener('pause', () => { pintarBotaoTocar(); contarAoSistema(true); });
+som.addEventListener('seeked', () => contarAoSistema(true));
 document.addEventListener('visibilitychange', () => { if (!som.paused) acordarAudio(); });
 
-som.addEventListener('timeupdate', () => { pintarProgresso(); pintarLetra(false); posicaoNoSistema(); });
+som.addEventListener('timeupdate', () => {
+  pintarProgresso(); pintarLetra(false); posicaoNoSistema(); contarAoSistema(false);
+});
 som.addEventListener('loadedmetadata', () => {
   const f = faixaAtual();
   if (f && !f.dur) { f.dur = som.duration; pintarLista(); }
-  pintarProgresso(); posicaoNoSistema();
+  pintarProgresso(); posicaoNoSistema(); contarAoSistema(true);
 });
 som.addEventListener('ended', () => {
   if (estado.repetir === 'uma') { som.currentTime = 0; tocar(); return; }

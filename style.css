@@ -307,7 +307,7 @@ svg path, svg circle {
 
 .item {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 40px;
+  grid-template-columns: 56px minmax(0, 1fr) 32px 40px;
   align-items: center;
   gap: var(--e4);
   width: 100%;
@@ -351,6 +351,35 @@ svg path, svg circle {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .item-sub b { color: var(--fraco); font-weight: 400; }
+
+/* O lápis flutua sobre a terceira coluna do grid da linha, que fica
+   reservada e vazia para ele. Ele NÃO é filho do <button> da linha: botão
+   dentro de botão é HTML inválido e o Chrome recusa foco no de dentro.
+
+   A conta do `right` é a distância até o CENTRO daquela coluna, somando o
+   que está à direita dela: padding + coluna do play + vão + meia coluna.
+   O translate de 50% centra o botão nesse ponto, então a largura dele pode
+   crescer sem refazer a conta. */
+.item-linha { position: relative; }
+
+.item-editar {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--e2) + 40px + var(--e4) + 16px);
+  transform: translate(50%, -50%);
+  width: 44px; height: 44px;      /* alvo de polegar; o desenho continua 16px */
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: none;
+  border: 0;
+  color: var(--fraco);
+  cursor: pointer;
+  transition: background var(--rapido), color var(--rapido);
+}
+.item-editar:hover,
+.item-editar:focus-visible { background: var(--superficie2); color: var(--texto); }
+.item-editar svg { width: 16px; height: 16px; }
+.item-editar svg path { fill: currentColor; stroke: none; }
 
 .item-play {
   width: 40px; height: 40px;

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Vitrola — toca os MP3 do seu aparelho. Lê as etiquetas, tira a cor da capa e tematiza a interface inteira com ela.">
+<title>Vitrola</title>
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23E8E9EC'/%3E%3Ccircle cx='16' cy='16' r='14' fill='%230E0E10'/%3E%3Ccircle cx='16' cy='16' r='4.8' fill='%23E8E9EC'/%3E%3Ccircle cx='16' cy='16' r='1' fill='%230E0E10'/%3E%3C/svg%3E">
+
+<!-- aplicativo instalável -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#E8E9EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E0E10" media="(prefers-color-scheme: dark)">
+
+<!-- iOS não lê o manifesto para isto; precisa das metas próprias -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vitrola">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <header class="cabeca">
+    <h1 class="marca">Vitrola</h1>
+
+    <div class="cabeca-acoes">
+      <button type="button" id="btn-instalar" class="btn-texto" hidden>Instalar</button>
+      <button type="button" id="btn-tema" class="btn-texto" aria-label="Alternar entre claro e escuro">
+        <span id="rotulo-tema">Escuro</span>
+      </button>
+      <button type="button" id="btn-abrir" class="btn-solido">Adicionar músicas</button>
+      <input type="file" id="arquivos" accept="audio/*,.mp3,.m4a,.ogg,.flac,.wav" multiple hidden>
+    </div>
+  </header>
+
+  <main class="palco">
+
+    <!-- ============ a capa ============ -->
+    <section class="sleeve" aria-label="Tocando agora">
+
+      <div class="capa" id="capa">
+        <img id="capa-img" alt="" hidden>
+        <div class="capa-vazia" id="capa-vazia" aria-hidden="true">
+          <svg viewBox="0 0 100 100" role="presentation">
+            <circle cx="50" cy="50" r="48" class="disco-borda"></circle>
+            <circle cx="50" cy="50" r="30" class="disco-sulco"></circle>
+            <circle cx="50" cy="50" r="22" class="disco-sulco"></circle>
+            <circle cx="50" cy="50" r="14" class="disco-selo"></circle>
+            <circle cx="50" cy="50" r="2.5" class="disco-furo"></circle>
+          </svg>
+        </div>
+      </div>
+
+      <div class="agora">
+        <p class="agora-titulo" id="titulo">Nenhuma faixa</p>
+        <p class="agora-artista" id="artista">Solte arquivos de áudio em qualquer lugar</p>
+        <p class="agora-album mono" id="album"></p>
+      </div>
+
+      <!-- ============ a onda, que também é a barra de progresso ============ -->
+      <div class="linha-tempo">
+        <div class="onda-caixa" id="onda-caixa"
+             role="slider" tabindex="0"
+             aria-label="Posição na faixa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <canvas id="onda"></canvas>
+        </div>
+        <div class="tempos mono">
+          <span id="t-atual">0:00</span>
+          <span id="t-total">0:00</span>
+        </div>
+      </div>
+
+      <!-- ============ transporte ============ -->
+      <div class="transporte">
+        <button type="button" id="btn-aleatorio" class="btn-icone btn-alterna" aria-pressed="false" aria-label="Ordem aleatória" title="Ordem aleatória (S)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h5v5M21 4l-7.5 7.5M3 20l7-7M16 20h5v-5M21 20l-5.5-5.5M3 4l4.5 4.5"/></svg>
+        </button>
+
+        <button type="button" id="btn-anterior" class="btn-icone" aria-label="Faixa anterior" title="Anterior (←)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14L8 12zM6 5v14" /></svg>
+        </button>
+
+        <button type="button" id="btn-tocar" class="btn-tocar" aria-label="Tocar" title="Tocar ou pausar (espaço)">
+          <svg id="icone-tocar" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>
+          <svg id="icone-pausa" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M7 4v16M17 4v16"/></svg>
+        </button>
+
+        <button type="button" id="btn-proximo" class="btn-icone" aria-label="Próxima faixa" title="Próxima (→)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14l10-7zM18 5v14"/></svg>
+        </button>
+
+        <button type="button" id="btn-repetir" class="btn-icone btn-alterna" aria-pressed="false" aria-label="Repetir" title="Repetir (R)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 014-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>
+          <span class="marca-um mono" id="marca-um" hidden>1</span>
+        </button>
+
+        <div class="volume">
+          <button type="button" id="btn-mudo" class="btn-icone" aria-label="Sem som" title="Sem som (M)">
+            <svg id="icone-som" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 9.5a3.5 3.5 0 010 5M19.5 7a7 7 0 010 10"/></svg>
+            <svg id="icone-mudo" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M4 9v6h4l5 4V5L8 9zM17 9.5l5 5M22 9.5l-5 5"/></svg>
+          </button>
+          <input type="range" id="volume" min="0" max="100" value="85" aria-label="Volume">
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ o encarte ============ -->
+    <aside class="encarte" aria-label="Fila">
+      <div class="encarte-cabeca">
+        <h2>Fila</h2>
+        <span class="conta mono" id="conta">0 faixas</span>
+      </div>
+
+      <ol class="fila" id="fila"></ol>
+
+      <div class="encarte-vazio" id="encarte-vazio">
+        <p><strong>A fila está vazia.</strong></p>
+        <p>Arraste seus arquivos de áudio para qualquer lugar desta página, ou escolha
+           pelo botão. Nada sai do seu computador — não há servidor. As etiquetas, a
+           capa e a cor são lidas do próprio arquivo, aqui no navegador.</p>
+        <button type="button" id="btn-abrir-vazio" class="btn-solido">Adicionar músicas</button>
+      </div>
+
+      <button type="button" id="btn-limpar" class="btn-texto btn-limpar" hidden>Esvaziar a fila</button>
+    </aside>
+
+  </main>
+
+  <!-- ============ espectro ao vivo, rodapé ============ -->
+  <canvas id="espectro" class="espectro" aria-hidden="true"></canvas>
+
+  <footer class="rodape mono">
+    <span><kbd>espaço</kbd> tocar</span>
+    <span><kbd>←</kbd><kbd>→</kbd> faixa</span>
+    <span><kbd>↑</kbd><kbd>↓</kbd> volume</span>
+    <span><kbd>S</kbd> aleatório</span>
+    <span><kbd>R</kbd> repetir</span>
+    <span><kbd>M</kbd> mudo</span>
+  </footer>
+
+</div>
+
+<div class="cortina" id="cortina" hidden aria-hidden="true">
+  <p>Solte para tocar</p>
+</div>
+
+<audio id="som" crossorigin="anonymous"></audio>
+<p id="aviso" class="sr-only" role="status" aria-live="polite"></p>
+
+<script src="app.js" defer></script>
+</body>
+</html>

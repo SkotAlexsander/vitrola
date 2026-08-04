@@ -1,0 +1,6 @@
+# Fim de linha LF no repositório e na cópia de trabalho.
+# Sem isso, editar no Windows enche o diff de mudança que não é mudança.
+* text=auto eol=lf
+
+# PNG é binário: nada de conversão de fim de linha.
+*.png binary

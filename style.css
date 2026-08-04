@@ -1,0 +1,621 @@
+/* ============================================================================
+   VITROLA — folha de estilo
+
+   A referência é o selo Elenco: Aloysio Magalhães, começo dos anos 60.
+   Preto, branco e UMA cor chapada. Tipografia pesada, apertada, em caixa
+   alta. Muito espaço vazio.
+
+   Daí a regra que manda em tudo aqui: a cor de acento é NEUTRA até entrar
+   uma faixa. A interface nasce em preto e branco, e é o álbum que a colore.
+   `--cor` é escrita pelo JS, já corrigida em luminosidade para passar no
+   contraste contra o fundo do tema em vigor.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- fichas */
+
+:root {
+  color-scheme: light dark;
+
+  /* -- escala de espaço. Um valor fora dela é um erro, não uma decisão. -- */
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+  --e7: 48px;
+  --vao: clamp(20px, 3.2vw, 44px);      /* o vão entre as duas colunas */
+
+  /* -- escala de tipo. O título da faixa é o herói; a marca não compete. -- */
+  --t-xs:    0.75rem;                    /* 12 — selos e crachás           */
+  --t-sm:    0.8125rem;                  /* 13 — dado monoespaçado         */
+  --t-md:    0.875rem;                   /* 14 — texto de interface        */
+  --t-base:  1rem;                       /* 16 — corpo                     */
+  --t-lg:    1.125rem;                   /* 18 — artista                   */
+  --t-marca: clamp(1.25rem, 3.4vw, 1.75rem);
+  --t-faixa: clamp(1.625rem, 4.6vw, 2.5rem);
+
+  /* -- neutros: viés levemente frio. Papel de prova sob luz de galeria.
+
+     Os três níveis de texto foram MEDIDOS, não escolhidos a olho:
+       --texto  ~15,9:1   título, corpo
+       --fraco   ~7,0:1   artista, rótulos
+       --tenue   ~4,5:1   número, duração, álbum, rodapé — o piso do WCAG
+     A escala é comprimida de propósito. Um cinza mais claro que --tenue
+     ficaria bonito e ilegível: o valor anterior media 1,93:1.
+
+     --borda é a ÚNICA exceção, e deliberada: é fio decorativo de
+     agrupamento, não contorno de controle. O WCAG 1.4.11 cobre o que é
+     preciso para identificar componente ou entender conteúdo; um filete
+     entre seções não é nem um nem outro. Onde o contorno de fato informa
+     — o trilho do volume, a onda não tocada — existe --limite. --------- */
+  --tinta:    #0E0E10;
+  --cal:      #E8E9EC;
+
+  --fundo:    var(--cal);
+  --texto:    var(--tinta);
+  --fraco:    #494B53;
+  --tenue:    #676971;
+  --borda:    #D3D5DB;
+  --limite:   #84858A;
+  --superf:   #DEE0E5;
+  --onda-off: #84858A;
+
+  /* Fio sobre a capa: preto puro no claro, branco puro no escuro. Um
+     neutro tingido pega a cor da superfície e lê como sujeira na borda. */
+  --fio-imagem: rgb(0 0 0 / 0.12);
+
+  /* Acento neutro enquanto não há faixa. Escolhido por medida, não por
+     gosto: precisa passar 4,5:1 contra o fundo DESTE tema, porque
+     `.btn-solido:hover` põe texto em cima dele. */
+  --cor-neutra: #55575F;
+  --cor:        var(--cor-neutra);
+  --cor-suave:  color-mix(in srgb, var(--cor) 14%, transparent);
+
+  --largura: 1180px;
+
+  /* Duas durações, dois trabalhos. A cor do álbum inundando a página é
+     raro e vale um tempo longo; hover é alta frequência e precisa ser
+     instantâneo. Um token só para os dois deixava o hover lerdo. */
+  --t-lento:  620ms cubic-bezier(.22, .61, .36, 1);
+  --t-rapido: 150ms cubic-bezier(.2, 0, 0, 1);
+
+  --face:      "Helvetica Neue", Helvetica, "Segoe UI", Arial, sans-serif;
+  --face-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo:      var(--tinta);
+    --texto:      var(--cal);
+    --fraco:      #989AA3;
+    --tenue:      #797B80;
+    --borda:      #26272C;
+    --limite:     #5D5F66;
+    --superf:     #17181C;
+    --onda-off:   #5D5F66;
+    --fio-imagem: rgb(255 255 255 / 0.12);
+    --cor-neutra: #A9ABB3;
+  }
+}
+
+/* o botão de tema tem de vencer a media query nos dois sentidos */
+:root[data-theme="light"] {
+  --fundo:      var(--cal);
+  --texto:      var(--tinta);
+  --fraco:      #494B53;
+  --tenue:      #676971;
+  --borda:      #D3D5DB;
+  --limite:     #84858A;
+  --superf:     #DEE0E5;
+  --onda-off:   #84858A;
+  --fio-imagem: rgb(0 0 0 / 0.12);
+  --cor-neutra: #55575F;
+}
+
+:root[data-theme="dark"] {
+  --fundo:      var(--tinta);
+  --texto:      var(--cal);
+  --fraco:      #989AA3;
+  --tenue:      #797B80;
+  --borda:      #26272C;
+  --limite:     #5D5F66;
+  --superf:     #17181C;
+  --onda-off:   #5D5F66;
+  --fio-imagem: rgb(255 255 255 / 0.12);
+  --cor-neutra: #A9ABB3;
+}
+
+/* ---------------------------------------------------------------- base */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { height: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--face);
+  font-size: var(--t-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--t-lento), color var(--t-lento);
+}
+
+.mono {
+  font-family: var(--face-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-sm);
+  letter-spacing: 0.02em;
+}
+
+:where(button, [href], input, [tabindex]):focus-visible {
+  outline: 2px solid var(--cor);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.app {
+  max-width: var(--largura);
+  margin-inline: auto;
+
+  /* As áreas seguras entram no padding: instalado no iOS com a barra
+     translúcida, o conteúdo passa por baixo do relógio e do indicador. */
+  padding-block-start:  calc(clamp(18px, 3vw, 34px) + env(safe-area-inset-top, 0px));
+  padding-inline-end:   calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-right, 0px));
+  padding-inline-start: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-left, 0px));
+  padding-block-end: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--vao);
+
+  /* 100vh mente no celular: conta com a barra do navegador que some ao
+     rolar. dvh é a altura de verdade. */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ---------------------------------------------------------------- cabeça */
+
+.cabeca {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e4);
+  flex-wrap: wrap;
+  padding-bottom: var(--e3);
+  border-bottom: 1px solid var(--borda);
+}
+
+/* A marca é menor que o título da faixa de propósito: quem manda na
+   composição é o disco tocando, não o nome do programa. */
+.marca {
+  margin: 0;
+  font-size: var(--t-marca);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.marca::after {
+  content: "";
+  display: inline-block;
+  width: 0.28em; height: 0.28em;
+  margin-inline-start: 0.16em;
+  border-radius: 50%;
+  background: var(--cor);
+  transition: background var(--t-lento);
+}
+
+.cabeca-acoes { display: flex; align-items: center; gap: var(--e3); }
+
+.btn-texto {
+  font: inherit;
+  font-size: var(--t-md);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fraco);
+  background: none;
+  border: 0;
+  padding: var(--e2) var(--e1);
+  cursor: pointer;
+  transition: color var(--t-rapido), scale var(--t-rapido);
+}
+.btn-texto:hover { color: var(--texto); }
+
+.btn-solido {
+  font: inherit;
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fundo);
+  background: var(--texto);
+  border: 0;
+  padding: var(--e3) var(--e4);
+  cursor: pointer;
+  transition: background var(--t-rapido), color var(--t-lento), scale var(--t-rapido);
+}
+.btn-solido:hover { background: var(--cor); }
+
+/* ---------------------------------------------------------------- palco */
+
+.palco {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  gap: var(--vao);
+  align-items: start;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .palco { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------------------------------------------------------------- a capa */
+
+.sleeve { display: flex; flex-direction: column; gap: var(--e5); min-width: 0; }
+
+.capa {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: 460px;
+  background: var(--superf);
+  overflow: hidden;
+  border-radius: 0;                     /* capa de disco não tem canto redondo */
+  outline: 1px solid var(--fio-imagem);
+  outline-offset: -1px;
+  transition: background var(--t-lento);
+}
+
+.capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.capa-vazia {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  padding: 16%;
+}
+.capa-vazia svg { width: 100%; height: 100%; }
+/* o disco da capa vazia é ilustração, não informação — fio decorativo */
+.disco-borda { fill: none; stroke: var(--borda); stroke-width: 1; }
+.disco-sulco { fill: none; stroke: var(--borda); stroke-width: .6; }
+.disco-selo  { fill: var(--cor); opacity: .5; transition: fill var(--t-lento); }
+.disco-furo  { fill: var(--fundo); }
+
+.agora { display: flex; flex-direction: column; gap: var(--e1); min-width: 0; }
+
+.agora-titulo {
+  margin: 0;
+  font-size: var(--t-faixa);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.15;                    /* título longo quebra em 3 linhas */
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.agora-artista {
+  margin: 0;
+  font-size: var(--t-lg);
+  font-weight: 400;
+  color: var(--fraco);
+  overflow-wrap: break-word;
+}
+
+.agora-album {
+  margin: var(--e1) 0 0;
+  color: var(--tenue);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ------------------------------------------------- a onda / progresso */
+
+.linha-tempo { display: flex; flex-direction: column; gap: var(--e1); }
+
+.onda-caixa {
+  position: relative;
+  height: 76px;
+  cursor: pointer;
+  touch-action: none;
+}
+.onda-caixa canvas { display: block; width: 100%; height: 100%; }
+
+.tempos { display: flex; justify-content: space-between; color: var(--fraco); }
+
+/* ---------------------------------------------------------- transporte */
+
+.transporte {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  flex-wrap: wrap;
+}
+
+.btn-icone, .btn-tocar {
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--texto);
+  position: relative;
+}
+
+.btn-icone {
+  width: 40px; height: 40px;
+  color: var(--fraco);
+  transition: color var(--t-rapido), scale var(--t-rapido);
+}
+.btn-icone:hover { color: var(--texto); }
+.btn-icone svg { width: 20px; height: 20px; }
+
+.btn-alterna[aria-pressed="true"] { color: var(--cor); }
+
+.marca-um {
+  position: absolute;
+  inset-inline-end: 2px; inset-block-end: 2px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cor);
+}
+
+.btn-tocar {
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  background: var(--texto);
+  color: var(--fundo);
+  transition: background var(--t-rapido), color var(--t-lento), scale var(--t-rapido);
+}
+.btn-tocar:hover { background: var(--cor); }
+.btn-tocar svg { width: 24px; height: 24px; }
+
+/* Pressão: 0.96 exatos. Abaixo de 0.95 fica exagerado. */
+.btn-icone:active, .btn-tocar:active, .btn-solido:active,
+.btn-texto:active, .fila-linha:active { scale: 0.96; }
+
+svg path { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#icone-tocar path, #btn-anterior path, #btn-proximo path { fill: currentColor; stroke: currentColor; stroke-width: 2.4; }
+#icone-som path, #icone-mudo path { fill: none; }
+#icone-som path:first-child, #icone-mudo path:first-child { fill: currentColor; }
+
+.volume { display: flex; align-items: center; gap: var(--e2); margin-inline-start: auto; }
+
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: clamp(70px, 12vw, 118px);
+  height: 24px;                          /* o alvo, não o traço */
+  background: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--limite); }
+input[type="range"]::-moz-range-track { height: 2px; background: var(--limite); }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--texto); border: 0; margin-top: -6px;
+  transition: background var(--t-rapido);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--texto); border: 0;
+}
+input[type="range"]:hover::-webkit-slider-thumb { background: var(--cor); }
+input[type="range"]:hover::-moz-range-thumb { background: var(--cor); }
+
+/* ---------------------------------------------------------------- encarte */
+
+.encarte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  min-width: 0;
+  border-inline-start: 1px solid var(--borda);
+  padding-inline-start: var(--vao);
+}
+
+@media (max-width: 900px) {
+  .encarte {
+    border-inline-start: 0;
+    padding-inline-start: 0;
+    border-block-start: 1px solid var(--borda);
+    padding-block-start: var(--e5);
+  }
+}
+
+.encarte-cabeca {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+
+.encarte-cabeca h2 {
+  margin: 0;
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.conta { color: var(--tenue); }
+
+.fila {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  max-height: min(56vh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.fila:empty { display: none; }
+
+/* Sem linha separadora: o espaço agrupa, o fundo no hover confirma o alvo.
+   Trinta hairlines iguais viram ruído. */
+.fila-linha {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e3);
+  width: 100%;
+  padding: var(--e2) var(--e2);
+  font: inherit;
+  text-align: start;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: background var(--t-rapido), scale var(--t-rapido);
+}
+.fila-linha:hover { background: var(--cor-suave); }
+
+.fila-num { color: var(--tenue); font-family: var(--face-mono); font-size: var(--t-xs); }
+
+.fila-txt { min-width: 0; }
+.fila-tit {
+  display: block;
+  font-size: var(--t-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fila-art {
+  display: block;
+  font-size: var(--t-sm);
+  font-weight: 400;
+  color: var(--fraco);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fila-dur { color: var(--tenue); font-family: var(--face-mono); font-size: var(--t-xs); }
+
+/* A faixa tocando: cor E um traço à esquerda. Cor sozinha nunca é o
+   único sinal de estado. */
+.fila-linha[aria-current="true"] { box-shadow: inset 2px 0 0 var(--cor); }
+.fila-linha[aria-current="true"] .fila-tit,
+.fila-linha[aria-current="true"] .fila-num { color: var(--cor); }
+
+.encarte-vazio {
+  color: var(--fraco);
+  font-size: var(--t-md);
+  max-width: 42ch;
+  display: flex; flex-direction: column; gap: var(--e2);
+  align-items: flex-start;
+  text-wrap: pretty;
+}
+.encarte-vazio p { margin: 0; }
+.encarte-vazio strong { color: var(--texto); font-weight: 700; }
+.encarte-vazio .btn-solido { margin-block-start: var(--e2); }
+
+.btn-limpar { align-self: flex-start; }
+
+/* ------------------------------------------------------- espectro e rodapé */
+
+.espectro {
+  display: block;
+  width: 100%;
+  height: 64px;
+  margin-block-start: auto;
+}
+
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1) var(--e4);
+  padding: var(--e3) 0 var(--e5);
+  border-block-start: 1px solid var(--borda);
+  color: var(--tenue);
+}
+
+kbd {
+  font: inherit;
+  color: var(--fraco);
+  border: 1px solid var(--borda);
+  border-bottom-width: 2px;
+  padding: 0 var(--e1);
+  margin-inline-end: 3px;
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------------- cortina */
+
+.cortina {
+  position: fixed; inset: 0;
+  z-index: 50;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--fundo) 88%, transparent);
+  backdrop-filter: blur(3px);
+}
+.cortina[hidden] { display: none; }
+.cortina p {
+  margin: 0;
+  font-size: clamp(1.4rem, 5vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  padding: clamp(28px, 6vw, 64px) clamp(36px, 9vw, 96px);
+  border: 2px dashed var(--cor);
+  color: var(--cor);
+}
+
+/* ------------------------------------------------------------ celular */
+
+@media (pointer: coarse) {
+  .btn-icone { width: 44px; height: 44px; }
+  .fila-linha { padding-block: var(--e3); }
+  .transporte { gap: var(--e3); }
+
+  /* O telefone já tem controle de volume no lado do aparelho. Repetir
+     isso na tela rouba largura do transporte, que é o que se usa. O botão
+     de mudo fica: silenciar rápido é outra intenção. */
+  #volume { display: none; }
+
+  /* Atalho de teclado não serve a quem não tem teclado. */
+  .rodape { display: none; }
+
+  .app { padding-block-end: env(safe-area-inset-bottom, 0px); }
+  .espectro { height: 44px; }
+}
+
+/* Telefone em pé: a capa é limitada pela ALTURA, não pela largura. Sem
+   isto ela ocupa a tela inteira e os controles ficam abaixo da dobra —
+   num player, ter de rolar para dar pausa é defeito. */
+@media (max-width: 640px) {
+  .capa { max-width: min(100%, 42vh); margin-inline: auto; }
+  .sleeve { gap: var(--e4); }
+  .onda-caixa { height: 60px; }
+  .agora { text-align: center; }
+  .transporte { justify-content: center; }
+  .volume { margin-inline-start: 0; }
+}
+
+/* Telefone deitado: quase não há altura. A capa some e a fila sobe. */
+@media (max-height: 460px) and (orientation: landscape) {
+  .capa, .espectro { display: none; }
+  .app { gap: var(--e4); }
+  .cabeca { padding-bottom: var(--e2); }
+}
+
+/* ---------------------------------------------------------------- respeito */
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-lento: 1ms; --t-rapido: 1ms; }
+  .btn-icone:active, .btn-tocar:active, .btn-solido:active,
+  .btn-texto:active, .fila-linha:active { scale: 1; }
+  * { animation: none !important; }
+}

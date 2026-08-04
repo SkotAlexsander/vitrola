@@ -1,0 +1,61 @@
+{
+  "name": "Vitrola",
+  "short_name": "Vitrola",
+  "description": "Toca os MP3 do seu aparelho. Lê as etiquetas, tira a cor da capa e tematiza a interface inteira com ela. Nada sai do aparelho.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0E0E10",
+  "theme_color": "#0E0E10",
+  "categories": ["music", "entertainment", "utilities"],
+  "icons": [
+    {
+      "src": "icones/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icones/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icones/icone-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "share_target": {
+    "action": "./compartilhar",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "audio",
+          "accept": ["audio/*", ".mp3", ".m4a", ".ogg", ".opus", ".flac", ".wav", ".aac"]
+        }
+      ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "audio/mpeg": [".mp3"],
+        "audio/mp4": [".m4a"],
+        "audio/ogg": [".ogg", ".oga", ".opus"],
+        "audio/flac": [".flac"],
+        "audio/wav": [".wav"],
+        "audio/aac": [".aac"]
+      }
+    }
+  ]
+}

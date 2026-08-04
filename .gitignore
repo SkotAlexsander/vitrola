@@ -1,0 +1,30 @@
+# Nota interna nunca vai pro repo — vai pra privado/.
+# Regra da casa, criada em 03/08/2026 no pixelmartins-site.
+privado/
+
+# Música de teste não entra: não é minha para distribuir.
+*.mp3
+*.m4a
+*.flac
+*.wav
+*.ogg
+*.opus
+*.aac
+
+# Obsidian: esta pasta mora dentro do vault, mas o vault não é assunto do repo
+.obsidian/
+*.canvas
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Nada é instalado neste projeto — mas se um dia for
+node_modules/
+*.log

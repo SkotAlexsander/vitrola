@@ -215,8 +215,13 @@ Duas decisões de produto que valem dizer:
 ## O que foi verificado
 
 ```bash
-node testes/testar.js
+node testes/testar.js                      # lógica pura, num DOM falso
+node testes/fumaca_local.js  . <destino>   # a pasta local, num Chrome de verdade
+node testes/fumaca_ao_vivo.js <mp3> <dst>  # o que o Pages está servindo AGORA
+node testes/capturas.js  . <mp3> capturas  # refaz as imagens deste README
 ```
+
+Os três últimos precisam do Playwright. O `fumaca_ao_vivo` é o que fecha a publicação: ele lê o `VERSAO` do `sw.js` local e confere contra o cache que o navegador registrou no site no ar — pega tanto "esqueci de subir a versão" quanto "subi e não empurrei". Como fabricar os MP3 de teste está no cabeçalho do `capturas.js` (não há música no repo: não é minha para distribuir).
 
 | | |
 |---|---|

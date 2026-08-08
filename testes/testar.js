@@ -11,10 +11,17 @@ const ARQ = path.join(__dirname, '..', 'app.js');
 
 /* ---------------------------------------------------------- DOM de mentira */
 const noop = () => {};
+/* `style` de mentira: aceita tanto `el.style.cor = x` quanto
+   `el.style.setProperty('--var', x)`, que e como o app mexe nas variaveis CSS. */
+function estiloFalso() {
+  return {
+    setProperty: noop, removeProperty: noop, getPropertyValue: () => '',
+  };
+}
 function elFalso(id) {
   return {
     id, textContent: '', innerHTML: '', value: '', hidden: false,
-    dataset: {}, style: {}, title: '',
+    dataset: {}, style: estiloFalso(), title: '',
     src: '', alt: '', paused: true, volume: 1, muted: false,
     currentTime: 0, duration: 0, playbackRate: 1, width: 800, height: 600,
     classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
@@ -58,13 +65,16 @@ const ctxGlobal = {
     querySelectorAll: () => [],
     addEventListener: noop,
     documentElement: elFalso('html'),
+    body: elFalso('body'),
     title: '',
   },
-  localStorage: { getItem: () => null, setItem: noop },
+  localStorage: { getItem: () => null, setItem: noop, removeItem: noop },
   window: {
     addEventListener: noop,
-    matchMedia: () => ({ matches: false, addEventListener: noop }),
+    matchMedia: () => ({ matches: false, addEventListener: noop, addListener: noop }),
     devicePixelRatio: 1,
+    innerWidth: 400, innerHeight: 800,
+    getComputedStyle: () => ({ getPropertyValue: () => '' }),
   },
   navigator: {},
 };
@@ -301,10 +311,16 @@ console.log('\n[9] a ponte da tela de bloqueio');
     pararMidia: () => parou++,
   };
 
+  // Na 3.0 a fila guarda UID, nao indice — trocar de faixa deixou de mexer no
+  // que estava guardado. Por isso a montagem aqui e biblioteca + porUid + fila.
   const tags = { titulo: 'Construção', artista: 'Chico Buarque', album: 'Construção' };
-  T.estado.fila.push({ id: 1, arquivo: null, tags, tagsCruas: tags, capaBlob: null,
-                       letra: null, capaURL: null, url: null, dur: 383, curtida: false });
-  T.estado.atual = 0;
+  const faixa = { uid: 'u1', id: 1, arquivo: null, tags, capaBlob: null, letra: null,
+                  curtida: false, dur: 383, contagem: 0, ultimaVez: 0,
+                  adicionadaEm: 0, url: null };
+  T.estado.biblioteca.push(faixa);
+  T.estado.porUid.set('u1', faixa);
+  T.estado.fila.push('u1');
+  T.estado.pos = 0;
   T.som.duration = 383;
   T.som.currentTime = 12.5;
   T.som.paused = false;
@@ -332,10 +348,10 @@ console.log('\n[9] a ponte da tela de bloqueio');
   T.som.duration = 383;
 
   // sem faixa, o card tem de sumir
-  T.estado.atual = -1;
+  T.estado.pos = -1;
   T.contarAoSistema(true);
   ok(parou === 1, 'sem faixa, manda tirar o card');
-  T.estado.atual = 0;
+  T.estado.pos = 0;
 
   // e o caminho de volta
   T.som.currentTime = 0;

@@ -1,13 +1,17 @@
 /* ============================================================================
    VITROLA — folha de estilo
 
-   Dois temas, escuro e claro, escolhidos no menu. Verde-limão é a ÚNICA
+   Dois temas, escuro e claro, escolhidos nos ajustes. Verde-limão é a ÚNICA
    cor de ação nos dois: tocar, filtro ativo, progresso, curtida. Todo o
    resto é preto e cinza — ou branco e cinza.
 
    A cor da capa não some — ela vive no BRILHO do fundo, ampliada e
    desfocada atrás do disco. Assim o álbum ilumina o ambiente sem disputar
    com o limão, que é quem manda nas ações.
+
+   O elemento assinatura é o TOCA-DISCOS: o prato gira enquanto toca, o
+   braço desce quando começa e caminha para o centro conforme a faixa
+   avança. É o nome do aplicativo virando desenho.
    ========================================================================== */
 
 :root {
@@ -23,7 +27,7 @@
   --t-md: 0.9375rem;  /* 15 */
   --t-lg: 1.0625rem;  /* 17 */
   --t-xl: 1.375rem;   /* 22 — título da tela de biblioteca */
-  --t-faixa: clamp(1.5rem, 6.5vw, 1.875rem);
+  --t-faixa: clamp(1.375rem, 5.8vw, 1.75rem);
 
   /* -- cor: escuro é o padrão -----------------------------------------
 
@@ -45,6 +49,7 @@
   --lima-clara:  #DBF562;
   --lima-tinta:  #CDEB45;
   --sobre-lima:  #10130A;
+  --perigo:      #FF7A6B;
   --vidro:       rgb(255 255 255 / .10);
   --vidro-alto:  rgb(255 255 255 / .18);
   --fio:         rgb(255 255 255 / .16);
@@ -54,11 +59,19 @@
   --sombra:      0 24px 60px rgb(0 0 0 / .55);
   --sombra-mini: 0 12px 34px rgb(0 0 0 / .5);
 
+  /* o vinil: quase preto, mas nunca o mesmo preto do fundo — senão o
+     disco desaparece contra a tela e o gesto de girar não se lê */
+  --vinil:       #121216;
+  --vinil-sulco: rgb(255 255 255 / .07);
+  --vinil-luz:   rgb(255 255 255 / .16);
+
   /* -- o que não muda com o tema -- */
   --r-pill: 999px;
   --r-card: 14px;
+  --r-folha: 26px;
 
   --rapido: 160ms cubic-bezier(.2, 0, 0, 1);
+  --medio:  320ms cubic-bezier(.2, 0, 0, 1);
   --lento:  700ms cubic-bezier(.22, .61, .36, 1);
 
   --face: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -66,6 +79,8 @@
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 
   --largura: 460px;          /* é um app de celular, também no computador */
+
+  --avanco: 0;               /* 0 a 1 — o quanto a faixa já andou */
 }
 
 /* -- claro: mesma estrutura, outros valores. Nada de inverter na marra:
@@ -82,6 +97,7 @@
   --lima-clara:  #DBF562;
   --lima-tinta:  #4A6300;
   --sobre-lima:  #10130A;
+  --perigo:      #B23A2A;
   --vidro:       rgb(0 0 0 / .07);
   --vidro-alto:  rgb(0 0 0 / .13);
   --fio:         rgb(0 0 0 / .18);
@@ -90,6 +106,9 @@
   --brilho-op:   .28;
   --sombra:      0 20px 46px rgb(20 21 26 / .18);
   --sombra-mini: 0 10px 26px rgb(20 21 26 / .16);
+  --vinil:       #1B1C22;
+  --vinil-sulco: rgb(255 255 255 / .06);
+  --vinil-luz:   rgb(255 255 255 / .14);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -118,14 +137,14 @@ body {
   clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-:where(button, [href], input, [tabindex]):focus-visible {
+:where(button, [href], input, select, [tabindex]):focus-visible {
   outline: 2px solid var(--lima-tinta);
   outline-offset: 3px;
   border-radius: 6px;
 }
 
 svg { display: block; }
-svg path, svg circle {
+svg path, svg circle, svg rect, svg line { 
   fill: none; stroke: currentColor;
   stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
 }
@@ -185,7 +204,15 @@ svg path, svg circle {
   padding:
     calc(var(--e4) + env(safe-area-inset-top, 0px))
     var(--e5)
-    calc(var(--e4) + env(safe-area-inset-bottom, 0px));
+    calc(var(--e3) + env(safe-area-inset-bottom, 0px));
+}
+
+/* a tela do player entra deslizando de baixo — o mesmo caminho que o dedo
+   faria ao puxar o mini player para cima */
+.tela-tocando { animation: subir var(--medio) both; }
+@keyframes subir {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
 }
 
 /* --------------------------------------------------------------- cabeça */
@@ -206,6 +233,13 @@ svg path, svg circle {
   letter-spacing: -0.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.tela-tocando .cabeca-titulo {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--fraco);
+}
 
 .redondo {
   width: 40px; height: 40px;
@@ -221,9 +255,6 @@ svg path, svg circle {
 .redondo:active { scale: .94; }
 .redondo svg { width: 19px; height: 19px; }
 
-#btn-curtir[aria-pressed="true"] { color: var(--lima-tinta); }
-#btn-curtir[aria-pressed="true"] .coracao path { fill: var(--lima-tinta); }
-
 /* --------------------------------------------------------------- menu */
 
 .menu {
@@ -235,10 +266,16 @@ svg path, svg circle {
   border-radius: var(--r-card);
   padding: var(--e1);
   display: flex; flex-direction: column;
-  min-width: 220px;
+  min-width: 244px;
   box-shadow: var(--sombra);
+  animation: cair var(--rapido) both;
+}
+@keyframes cair {
+  from { transform: translateY(-6px) scale(.98); opacity: 0; }
+  to   { transform: none; opacity: 1; }
 }
 .menu-item {
+  display: flex; align-items: center; gap: var(--e3);
   font: inherit; font-size: var(--t-md);
   text-align: start; color: var(--texto);
   background: none; border: 0;
@@ -247,13 +284,60 @@ svg path, svg circle {
   cursor: pointer;
 }
 .menu-item:hover { background: var(--realce); }
+.menu-item svg { width: 17px; height: 17px; flex: none; color: var(--fraco); }
+.menu-valor {
+  margin-inline-start: auto;
+  font-size: var(--t-sm); color: var(--fraco);
+}
+.menu-perigo { color: var(--perigo); }
+.menu-perigo svg { color: var(--perigo); }
+
+/* --------------------------------------------------------------- busca */
+
+.busca {
+  position: relative;
+  display: flex; align-items: center;
+  flex: none;
+  margin-block-start: var(--e4);
+  background: var(--superficie);
+  border-radius: var(--r-pill);
+  transition: background var(--rapido);
+}
+.busca:focus-within { background: var(--superficie2); }
+.busca-lupa {
+  width: 17px; height: 17px;
+  margin-inline: var(--e4) 0;
+  color: var(--tenue);
+  flex: none;
+}
+.busca-campo {
+  flex: 1; min-width: 0;
+  font: inherit; font-size: var(--t-md);
+  color: var(--texto);
+  background: none; border: 0;
+  padding: var(--e3) var(--e3);
+  outline: none;
+}
+.busca-campo::placeholder { color: var(--tenue); }
+.busca-campo::-webkit-search-cancel-button { display: none; }
+.busca-limpar {
+  width: 34px; height: 34px;
+  margin-inline-end: var(--e2);
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: var(--vidro);
+  color: var(--fraco);
+  cursor: pointer;
+  flex: none;
+}
+.busca-limpar svg { width: 13px; height: 13px; }
 
 /* --------------------------------------------------------------- chips */
 
 .chips {
   display: flex;
   gap: var(--e2);
-  margin-block: var(--e5) var(--e4);
+  margin-block: var(--e4) var(--e3);
   overflow-x: auto;
   scrollbar-width: none;
   flex: none;
@@ -271,7 +355,7 @@ svg path, svg circle {
   background: var(--superficie);
   border: 0;
   border-radius: var(--r-pill);
-  padding: var(--e3) var(--e5);
+  padding: var(--e2) var(--e4);
   cursor: pointer;
   white-space: nowrap;
   transition: background var(--rapido), color var(--rapido), scale var(--rapido);
@@ -297,6 +381,7 @@ svg path, svg circle {
 .lista::-webkit-scrollbar { display: none; }
 
 .lista-grupo {
+  display: flex; align-items: baseline; gap: var(--e2);
   font-size: var(--t-sm);
   font-weight: 600;
   letter-spacing: .08em;
@@ -304,15 +389,21 @@ svg path, svg circle {
   color: var(--tenue);
   padding: var(--e5) var(--e2) var(--e2);
 }
+.lista-grupo b { color: var(--texto); font-weight: 600; }
+.lista-vazia {
+  padding: var(--e6) var(--e2);
+  text-align: center;
+  color: var(--fraco);
+  font-size: var(--t-md);
+}
 
 .item {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 32px 40px;
+  grid-template-columns: 52px minmax(0, 1fr) 36px;
   align-items: center;
-  gap: var(--e4);
+  gap: var(--e3);
   width: 100%;
   padding: var(--e2);
-  margin-block-end: var(--e2);
   background: none;
   border: 0;
   border-radius: var(--r-card);
@@ -326,7 +417,8 @@ svg path, svg circle {
 .item:active { scale: .985; }
 
 .item-capa {
-  width: 56px; height: 56px;
+  position: relative;
+  width: 52px; height: 52px;
   border-radius: 12px;
   overflow: hidden;
   background: var(--superficie);
@@ -334,7 +426,32 @@ svg path, svg circle {
   flex: none;
 }
 .item-capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.item-capa svg { width: 60%; height: 60%; opacity: .5; }
+.item-capa svg { width: 58%; height: 58%; opacity: .45; }
+
+/* as barrinhas que dançam sobre a capa da faixa que está tocando: diz
+   "é esta" sem depender só de cor */
+.equalizador {
+  position: absolute; inset: 0;
+  display: none;
+  align-items: flex-end; justify-content: center;
+  gap: 3px;
+  padding-block-end: 15px;
+  background: rgb(0 0 0 / .48);
+}
+.equalizador i {
+  display: block; width: 3px; height: 6px;
+  border-radius: 2px;
+  background: var(--lima);
+  animation: dancar 900ms ease-in-out infinite alternate;
+}
+.equalizador i:nth-child(2) { animation-duration: 640ms; }
+.equalizador i:nth-child(3) { animation-duration: 1120ms; }
+@keyframes dancar { to { height: 17px; } }
+/* as barrinhas param quando a música para: pausado tem que PARECER
+   pausado também na lista, não só no botão */
+.item[aria-current="true"] .equalizador { display: flex; }
+.item[aria-current="true"] .equalizador i { animation-play-state: paused; }
+body.tocando .item[aria-current="true"] .equalizador i { animation-play-state: running; }
 
 .item-txt { min-width: 0; }
 .item-tit {
@@ -350,61 +467,70 @@ svg path, svg circle {
   color: var(--fraco);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.item-sub b { color: var(--fraco); font-weight: 400; }
 
-/* O lápis flutua sobre a terceira coluna do grid da linha, que fica
-   reservada e vazia para ele. Ele NÃO é filho do <button> da linha: botão
-   dentro de botão é HTML inválido e o Chrome recusa foco no de dentro.
+/* O botão de opções é IRMÃO da linha, não filho: botão dentro de botão é
+   HTML inválido, e o preço apareceu na medição — o Chrome recusa foco no
+   de dentro, então pelo teclado esse botão simplesmente não existia. Fica
+   flutuando sobre a última coluna, que o grid deixa reservada para ele. */
+.item-linha { position: relative; margin-block-end: var(--e1); }
 
-   A conta do `right` é a distância até o CENTRO daquela coluna, somando o
-   que está à direita dela: padding + coluna do play + vão + meia coluna.
-   O translate de 50% centra o botão nesse ponto, então a largura dele pode
-   crescer sem refazer a conta. */
-.item-linha { position: relative; }
-
-.item-editar {
+.item-mais {
   position: absolute;
-  top: 50%;
-  right: calc(var(--e2) + 40px + var(--e4) + 16px);
-  transform: translate(50%, -50%);
+  top: 50%; inset-inline-end: 0;
+  transform: translateY(-50%);
   width: 44px; height: 44px;      /* alvo de polegar; o desenho continua 16px */
   display: grid; place-items: center;
   border-radius: 50%;
   background: none;
   border: 0;
-  color: var(--fraco);
+  color: var(--tenue);
   cursor: pointer;
   transition: background var(--rapido), color var(--rapido);
 }
-.item-editar:hover,
-.item-editar:focus-visible { background: var(--superficie2); color: var(--texto); }
-.item-editar svg { width: 16px; height: 16px; }
-.item-editar svg path { fill: currentColor; stroke: none; }
+.item-mais:hover,
+.item-mais:focus-visible { background: var(--superficie2); color: var(--texto); }
+.item-mais svg { width: 16px; height: 16px; }
+.item-mais .pontos circle { fill: currentColor; stroke: none; }
 
-.item-play {
-  width: 40px; height: 40px;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  background: var(--superficie2);
-  color: var(--texto);
-  flex: none;
-}
-.item-play svg { width: 15px; height: 15px; }
-.item-play svg path { fill: currentColor; stroke: none; }
-
-/* a que toca: limão E um traço, porque cor sozinha nunca basta */
+/* a que toca: limão E as barrinhas, porque cor sozinha nunca basta */
 .item[aria-current="true"] { background: color-mix(in srgb, var(--lima-tinta) 11%, transparent); }
 .item[aria-current="true"] .item-tit { color: var(--lima-tinta); }
-.item[aria-current="true"] .item-play { background: var(--lima); color: var(--sobre-lima); }
 
 .item-curtida { /* limão como tinta: escurece no tema claro */
-  width: 13px; height: 13px;
+  width: 12px; height: 12px;
   display: inline-block;
   vertical-align: -1px;
   margin-inline-end: 5px;
   color: var(--lima-tinta);
 }
 .item-curtida path { fill: currentColor; stroke: none; }
+
+/* linha de grupo (artista, álbum, playlist) que se abre */
+.grupo-linha {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: var(--e3);
+  width: 100%;
+  padding: var(--e2);
+  margin-block-end: var(--e1);
+  background: none; border: 0;
+  border-radius: var(--r-card);
+  color: inherit; font: inherit; text-align: start;
+  cursor: pointer;
+}
+.grupo-linha:hover { background: var(--realce); }
+.grupo-capa {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--superficie);
+  display: grid; place-items: center;
+}
+.grupo-capa img { width: 100%; height: 100%; object-fit: cover; }
+.grupo-capa svg { width: 55%; height: 55%; opacity: .45; }
+.grupo-seta { color: var(--tenue); }
+.grupo-seta svg { width: 16px; height: 16px; }
 
 /* --------------------------------------------------------------- vazio */
 
@@ -416,7 +542,7 @@ svg path, svg circle {
   gap: var(--e3);
   padding-block-end: 60px;
 }
-.vazio-disco { width: 128px; height: 128px; opacity: .5; }
+.vazio-disco { width: 120px; height: 120px; opacity: .5; }
 .vazio-titulo { margin: var(--e4) 0 0; font-size: var(--t-lg); font-weight: 600; }
 .vazio-texto  { margin: 0; font-size: var(--t-md); color: var(--fraco); max-width: 34ch; text-wrap: pretty; }
 .vazio-nota   { margin: var(--e2) 0 0; font-size: var(--t-sm); color: var(--tenue); max-width: 34ch; text-wrap: pretty; }
@@ -447,7 +573,7 @@ svg path, svg circle {
 .mini {
   position: absolute;
   inset-inline: var(--e5);
-  bottom: calc(var(--e4) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--e3) + env(safe-area-inset-bottom, 0px));
   z-index: 4;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) 40px 40px;
@@ -458,6 +584,25 @@ svg path, svg circle {
   background: color-mix(in srgb, var(--superficie2) 84%, transparent);
   backdrop-filter: blur(20px);
   box-shadow: var(--sombra-mini);
+  overflow: hidden;
+}
+/* Um fio de progresso no pé do mini player: informa sem ocupar espaço.
+   Recuado dos lados de propósito — a cápsula é bem arredondada, e um fio
+   colado na borda seria comido pelo canto. */
+.mini-trilho {
+  position: absolute;
+  inset-block-end: 5px; inset-inline: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--fio);
+  pointer-events: none;
+  overflow: hidden;
+}
+.mini-barra {
+  display: block;
+  height: 100%; width: 0;
+  border-radius: 2px;
+  background: var(--lima-tinta);
 }
 .mini-capa {
   width: 44px; height: 44px;
@@ -490,22 +635,120 @@ svg path, svg circle {
 .mini-btn:active { scale: .92; }
 .mini-btn svg { width: 18px; height: 18px; }
 .mini-btn svg path { fill: currentColor; stroke: none; }
+#mini-icone-pausa path { fill: none; stroke: currentColor; stroke-width: 2.4; }
 
-/* ------------------------------------------------------------ a bolacha */
+/* ==========================================================================
+   O TOCA-DISCOS
+   O prato gira só enquanto toca; ao pausar ele PARA onde estava, como um
+   prato de verdade. O braço desce ao começar e caminha para o centro
+   conforme a faixa anda — --avanco vem do JS, de 0 a 1.
+   ========================================================================== */
 
-.bolacha {
+.prato {
   position: relative;
-  width: min(72%, 300px);
+  width: min(66%, 272px, 34vh);
   aspect-ratio: 1;
-  margin: clamp(16px, 5vh, 44px) auto clamp(16px, 4vh, 32px);
+  margin: clamp(10px, 3.2vh, 30px) auto clamp(12px, 3vh, 26px);
+  flex: none;
+  touch-action: pan-y;
+}
+
+.disco {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   overflow: hidden;
-  flex: none;
-  background: var(--superficie);
-  box-shadow: var(--sombra);
+  background: var(--vinil);
+  box-shadow: var(--sombra), inset 0 0 0 1px rgb(255 255 255 / .06);
 }
-.bolacha img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.bolacha-vazia { position: absolute; inset: 14%; }
+
+.disco-gira {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  animation: girar 20s linear infinite;
+  animation-play-state: paused;
+}
+.prato.rodando .disco-gira { animation-play-state: running; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.disco-gira img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bolacha-vazia { position: absolute; inset: 13%; }
+
+/* os sulcos: anéis finíssimos por cima da capa. Ficam DENTRO do que gira,
+   senão a capa passaria por baixo de um padrão parado e o efeito morre. */
+.sulcos {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle at 50% 50%,
+    var(--vinil-sulco) 0 1px,
+    transparent 1px 5px);
+  opacity: .5;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* o lustre NÃO gira: é a luz da sala refletindo no disco que passa por
+   baixo. É o que faz a rotação parecer física e não um GIF */
+.lustre {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 210deg at 50% 50%,
+      transparent 0deg,
+      var(--vinil-luz) 22deg,
+      transparent 60deg,
+      transparent 190deg,
+      color-mix(in srgb, var(--vinil-luz) 60%, transparent) 210deg,
+      transparent 250deg);
+  pointer-events: none;
+}
+
+.furo {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 7.5%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--fundo);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / .35), inset 0 1px 2px rgb(0 0 0 / .6);
+  pointer-events: none;
+}
+
+/* o braço. O eixo fica em 104 de 100 — fora do prato, ao lado dele —
+   então o SVG não pode cortar. Em repouso a agulha fica fora do disco;
+   ao tocar, pousa na borda (13°) e caminha até perto do miolo (35°). */
+.braco {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  overflow: visible;
+  z-index: 2;
+  color: var(--fraco);
+  pointer-events: none;
+  filter: drop-shadow(0 5px 10px rgb(0 0 0 / .45));
+}
+.braco-corpo {
+  transform-origin: 104px 10px;
+  transform: rotate(0deg);
+  transition: transform 900ms cubic-bezier(.32, .72, .28, 1);
+}
+.prato.rodando .braco-corpo,
+.prato.pousado .braco-corpo {
+  transform: rotate(calc(13deg + var(--avanco) * 22deg));
+}
+/* a agulha atravessa o disco: enquanto ela caminha, o braço fica por cima
+   do vinil, e a transição precisa ser linear no trecho longo para não dar
+   solavanco a cada quarto de segundo do timeupdate */
+.prato.rodando .braco-corpo { transition-timing-function: linear; transition-duration: 400ms; }
+.braco-eixo   { fill: var(--superficie2); stroke: var(--fio); stroke-width: 2.5; }
+.braco-haste  { stroke: var(--fraco); stroke-width: 5; stroke-linecap: round; }
+.braco-cabeca { fill: var(--fraco); stroke: none; }
+.prato.rodando .braco-cabeca { fill: var(--lima-tinta); }
+
+/* ---------------------------------------------------------------- agora */
 
 .agora { text-align: center; flex: none; }
 .agora-titulo {
@@ -533,9 +776,17 @@ svg path, svg circle {
   align-items: center; justify-content: center;
   gap: var(--e1);
   text-align: center;
-  padding-block: var(--e4);
+  padding-block: var(--e3);
+  width: 100%;
+  background: none; border: 0;
+  color: inherit; font: inherit;
+  cursor: pointer;
+  border-radius: var(--r-card);
+  overflow: hidden;
 }
+.letra:hover { background: var(--realce); }
 .letra-linha {
+  display: block;
   margin: 0;
   font-size: var(--t-md);
   line-height: 1.5;
@@ -549,7 +800,7 @@ svg path, svg circle {
 
 /* ----------------------------------------------------------- progresso */
 
-.progresso { flex: none; margin-block-end: var(--e5); }
+.progresso { flex: none; margin-block-end: var(--e4); }
 
 .trilho {
   position: relative;
@@ -574,7 +825,9 @@ svg path, svg circle {
   transform: translateX(-50%);
   pointer-events: none;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--lima-tinta) 22%, transparent);
+  transition: scale var(--rapido);
 }
+.trilho.pegando .trilho-bola { scale: 1.5; }
 
 .tempos {
   display: flex; justify-content: space-between;
@@ -597,6 +850,7 @@ svg path, svg circle {
 }
 
 .t-btn {
+  position: relative;
   display: grid; place-items: center;
   border: 0; border-radius: 50%;
   cursor: pointer;
@@ -609,6 +863,19 @@ svg path, svg circle {
 .t-plano:hover { color: var(--texto); }
 .t-plano svg { width: 20px; height: 20px; }
 .t-plano[aria-pressed="true"] { color: var(--lima-tinta); }
+#btn-repetir[data-modo="tudo"],
+#btn-repetir[data-modo="uma"] { color: var(--lima-tinta); }
+
+.selo-um {
+  position: absolute;
+  inset-block-end: 5px; inset-inline-end: 6px;
+  font-size: 9px; font-weight: 800;
+  line-height: 1;
+  padding: 2px 3px;
+  border-radius: 4px;
+  background: var(--lima);
+  color: var(--sobre-lima);
+}
 
 .t-cinza { width: 52px; height: 52px; background: var(--superficie2); }
 .t-cinza svg { width: 20px; height: 20px; }
@@ -616,7 +883,7 @@ svg path, svg circle {
 
 /* o centro é maior e é a única coisa limão aqui: hierarquia sem enfeite */
 .t-lima {
-  width: 68px; height: 68px;
+  width: 66px; height: 66px;
   background: var(--lima);
   color: var(--sobre-lima);
   box-shadow: 0 10px 28px color-mix(in srgb, var(--lima) 30%, transparent);
@@ -625,7 +892,282 @@ svg path, svg circle {
 .t-lima svg { width: 26px; height: 26px; }
 .t-lima svg path { fill: currentColor; stroke: none; }
 #icone-pausa path { fill: none; stroke: currentColor; stroke-width: 2.6; }
-#mini-icone-pausa path { fill: none; stroke: currentColor; stroke-width: 2.4; }
+
+/* ------------------------------------------------------- rodapé do player */
+
+.rodape-tocando {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
+  margin-block-start: var(--e3);
+}
+.acao-secundaria {
+  position: relative;
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: none;
+  color: var(--tenue);
+  cursor: pointer;
+  transition: color var(--rapido), background var(--rapido), scale var(--rapido);
+}
+.acao-secundaria:hover { color: var(--texto); background: var(--realce); }
+.acao-secundaria:active { scale: .94; }
+.acao-secundaria svg { width: 19px; height: 19px; }
+.acao-secundaria[aria-pressed="true"] { color: var(--lima-tinta); }
+#btn-curtir[aria-pressed="true"] .coracao path { fill: var(--lima-tinta); }
+.rotulo-velocidade {
+  font-size: var(--t-sm); font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.acao-secundaria.ativa { color: var(--lima-tinta); }
+.selo-timer {
+  position: absolute;
+  inset-block-start: 2px; inset-inline-end: 1px;
+  font-size: 9px; font-weight: 800; line-height: 1;
+  padding: 2px 3px;
+  border-radius: 4px;
+  background: var(--lima);
+  color: var(--sobre-lima);
+}
+
+/* ==========================================================================
+   FOLHAS — uma só, reaproveitada. Fila, letra, ajustes, editor e menus.
+   ========================================================================== */
+
+.folha-fundo {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgb(0 0 0 / .55);
+  backdrop-filter: blur(3px);
+  animation: aparecer var(--medio) both;
+}
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+
+.folha {
+  position: fixed;
+  z-index: 21;
+  inset-inline: 0;
+  inset-block-end: 0;
+  margin-inline: auto;
+  max-width: var(--largura);
+  max-height: 86dvh;
+  max-height: 86vh;
+  display: flex; flex-direction: column;
+  background: var(--superficie);
+  border-radius: var(--r-folha) var(--r-folha) 0 0;
+  box-shadow: var(--sombra);
+  animation: folha-sobe var(--medio) both;
+  padding-block-end: env(safe-area-inset-bottom, 0px);
+}
+@keyframes folha-sobe {
+  from { transform: translateY(100%); }
+  to   { transform: none; }
+}
+.folha.saindo { animation: folha-desce var(--rapido) both; }
+@keyframes folha-desce { to { transform: translateY(100%); } }
+
+.folha-puxador {
+  padding: var(--e2) 0 var(--e1);
+  display: grid; place-items: center;
+  cursor: grab;
+  touch-action: none;
+}
+.folha-puxador span {
+  display: block; width: 38px; height: 4px;
+  border-radius: 2px; background: var(--fio);
+}
+
+.folha-cabeca {
+  display: flex; align-items: center; gap: var(--e3);
+  padding: var(--e2) var(--e4) var(--e3) var(--e5);
+  flex: none;
+}
+.folha-titulo {
+  margin: 0; flex: 1; min-width: 0;
+  font-size: var(--t-lg); font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.folha-corpo {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--e5) var(--e5);
+  scrollbar-width: none;
+}
+.folha-corpo::-webkit-scrollbar { display: none; }
+
+/* --- peças de dentro das folhas --- */
+
+.folha-acao {
+  display: flex; align-items: center; gap: var(--e4);
+  width: 100%;
+  padding: var(--e3) var(--e2);
+  background: none; border: 0;
+  border-radius: 10px;
+  color: var(--texto); font: inherit; font-size: var(--t-md);
+  text-align: start; cursor: pointer;
+}
+.folha-acao:hover { background: var(--realce); }
+.folha-acao svg { width: 19px; height: 19px; flex: none; color: var(--fraco); }
+.folha-acao.perigo, .folha-acao.perigo svg { color: var(--perigo); }
+.folha-acao .direita { margin-inline-start: auto; color: var(--fraco); font-size: var(--t-sm); }
+
+.folha-secao {
+  margin-block: var(--e5) var(--e2);
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--tenue);
+}
+.folha-secao:first-child { margin-block-start: var(--e2); }
+
+.folha-nota {
+  margin: var(--e2) 0 0;
+  font-size: var(--t-sm); color: var(--tenue);
+  text-wrap: pretty;
+}
+
+.campo { display: block; margin-block-end: var(--e4); }
+.campo-rotulo {
+  display: block;
+  font-size: var(--t-sm); font-weight: 600;
+  color: var(--fraco);
+  margin-block-end: var(--e2);
+}
+.campo-entrada {
+  width: 100%;
+  font: inherit; font-size: var(--t-md);
+  color: var(--texto);
+  background: var(--superficie2);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: var(--e3) var(--e4);
+  outline: none;
+}
+.campo-entrada:focus { border-color: var(--lima-tinta); }
+.campo-entrada::placeholder { color: var(--tenue); }
+textarea.campo-entrada { min-height: 120px; resize: vertical; line-height: 1.5; }
+
+.segmentos {
+  display: flex; gap: var(--e1);
+  background: var(--superficie2);
+  border-radius: var(--r-pill);
+  padding: var(--e1);
+}
+.segmento {
+  flex: 1;
+  font: inherit; font-size: var(--t-sm); font-weight: 600;
+  color: var(--fraco);
+  background: none; border: 0;
+  border-radius: var(--r-pill);
+  padding: var(--e2) var(--e1);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--rapido), color var(--rapido);
+}
+.segmento[aria-pressed="true"] { background: var(--lima); color: var(--sobre-lima); }
+
+.deslizante {
+  width: 100%;
+  -webkit-appearance: none; appearance: none;
+  height: 26px;
+  background: none;
+  cursor: pointer;
+}
+.deslizante::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 2px; background: var(--fio);
+}
+.deslizante::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 15px; height: 15px; margin-top: -6px;
+  border-radius: 50%; background: var(--lima-tinta);
+  border: 0;
+}
+.deslizante::-moz-range-track { height: 3px; border-radius: 2px; background: var(--fio); }
+.deslizante::-moz-range-thumb {
+  width: 15px; height: 15px; border: 0;
+  border-radius: 50%; background: var(--lima-tinta);
+}
+
+.linha-controle {
+  display: flex; align-items: center; gap: var(--e4);
+  padding-block: var(--e2);
+}
+.linha-controle svg { width: 18px; height: 18px; color: var(--fraco); flex: none; }
+.linha-controle .valor {
+  min-width: 46px; text-align: end;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: var(--t-sm); color: var(--fraco);
+}
+
+/* Equalizador com as barras DEITADAS. Em pé fica mais bonito, mas
+   depende de slider-vertical, que cada versão de WebView do Android
+   interpreta de um jeito — e um controle que às vezes vira ao contrário
+   é pior que um controle sem graça. */
+.eq { padding-block: var(--e2); }
+.eq-faixa {
+  display: grid;
+  grid-template-columns: 38px 1fr 40px;
+  align-items: center;
+  gap: var(--e3);
+}
+.eq-hz { font-size: var(--t-sm); color: var(--fraco); font-variant-numeric: tabular-nums; }
+.eq-db {
+  font-size: var(--t-sm); color: var(--tenue);
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+/* lista de faixas dentro da folha (fila, playlist) */
+.folha-lista { list-style: none; margin: 0; padding: 0; }
+.folha-lista .item-linha { margin-block-end: 2px; }
+.fila-cabeca {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--e3);
+  margin-block: var(--e4) var(--e2);
+}
+.fila-passada .item { opacity: .45; }
+
+/* letra inteira */
+.letra-toda { display: flex; flex-direction: column; gap: var(--e1); }
+.letra-toda button {
+  background: none; border: 0;
+  color: var(--fraco); font: inherit; font-size: var(--t-md);
+  line-height: 1.55; text-align: start;
+  padding: var(--e2) var(--e3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--rapido), background var(--rapido);
+}
+.letra-toda button.ativa { color: var(--texto); font-weight: 700; background: var(--realce); }
+.letra-toda button:disabled { cursor: default; }
+
+/* ------------------------------------------------------------- recado */
+
+.recado {
+  position: fixed;
+  z-index: 30;
+  inset-inline: 0;
+  inset-block-end: calc(var(--e7) + env(safe-area-inset-bottom, 0px));
+  margin-inline: auto;
+  width: fit-content; max-width: min(88vw, 380px);
+  padding: var(--e3) var(--e5);
+  border-radius: var(--r-pill);
+  background: var(--superficie2);
+  color: var(--texto);
+  font-size: var(--t-sm);
+  text-align: center;
+  box-shadow: var(--sombra-mini);
+  animation: recado-entra var(--medio) both;
+  pointer-events: none;
+}
+@keyframes recado-entra {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.recado.saindo { animation: recado-sai var(--rapido) both; }
+@keyframes recado-sai { to { transform: translateY(10px); opacity: 0; } }
 
 /* -------------------------------------------------------------- cortina */
 
@@ -660,13 +1202,28 @@ svg path, svg circle {
     outline-offset: -1px;
   }
   body { background: var(--moldura); }
+  .folha { border-radius: var(--r-folha); inset-block-end: 6vh; }
+}
+
+/* telas baixas: o disco encolhe antes de tudo, e a letra some */
+@media (max-height: 660px) {
+  .prato { width: min(52%, 190px); margin-block: var(--e2); }
+  .letra { display: none; }
+  .rodape-tocando { margin-block-start: var(--e1); }
 }
 
 /* ------------------------------------------------------------- respeito */
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --rapido: 1ms; --lento: 1ms; }
+  :root { --rapido: 1ms; --medio: 1ms; --lento: 1ms; }
   .pulso { display: none; }
+  .disco-gira { animation: none !important; }
+  .equalizador i { animation: none; height: 12px; }
+  .braco-corpo { transition: none; }
+  .tela-tocando, .folha, .folha-fundo, .recado, .menu { animation: none; }
   .t-btn:active, .chip:active, .item:active, .redondo:active,
-  .botao-lima:active, .mini-btn:active { scale: 1; }
+  .botao-lima:active, .mini-btn:active, .acao-secundaria:active { scale: 1; }
 }
+
+/* quem prefere sem giro mas com o resto: ajuste próprio, no menu */
+:root[data-girar="nao"] .disco-gira { animation: none !important; }

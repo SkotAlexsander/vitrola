@@ -1,0 +1,42 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace "io.github.skotalexsander.vitrola"
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "io.github.skotalexsander.vitrola"
+        minSdk 21
+        targetSdk 36
+        // mesmo pacote e mesma chave desde o primeiro APK, entao cada um
+        // instala POR CIMA do anterior, como atualizacao. O versionCode tem
+        // de subir sempre: com o numero igual ou menor o Android recusa.
+        versionCode 6
+        versionName "3.0.0"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("VITROLA_KEYSTORE"))
+            storePassword System.getenv("VITROLA_SENHA")
+            keyAlias "vitrola"
+            keyPassword System.getenv("VITROLA_SENHA")
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

@@ -13,7 +13,12 @@
       Sem isto, "compartilhar com a Vitrola" simplesmente não existe.
    ========================================================================== */
 
-const VERSAO = 'vitrola-v1';
+/* A estratégia é cache-primeiro, então este nome É o botão de publicar:
+   enquanto ele não muda, quem já tem o aplicativo instalado continua abrindo
+   a cópia guardada e NUNCA vê a versão nova. Trocar arquivo da casca sem
+   trocar este texto é publicar para ninguém.
+   v1 → v3 em 08/08/2026, junto com a reescrita 3.0. */
+const VERSAO = 'vitrola-v3';
 
 const CASCA = [
   './',

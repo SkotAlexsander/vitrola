@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
 <meta name="description" content="Vitrola — toca os arquivos do seu aparelho. Lê as etiquetas, tira a cor da capa e ilumina a tela com ela.">
 <title>Vitrola</title>
 
@@ -47,27 +47,55 @@
       </button>
       <h1 class="cabeca-titulo">Minhas músicas</h1>
       <button type="button" class="redondo" id="btn-menu" aria-label="Mais opções" aria-expanded="false">
-        <!-- fill explícito: a regra global de svg dá stroke sem fill, e um
-             círculo de raio 1,6 só parecia ponto por acidente do traço -->
         <svg viewBox="0 0 24 24" aria-hidden="true" class="pontos"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
     </header>
 
     <div class="menu" id="menu" hidden>
-      <button type="button" class="menu-item" id="btn-embaralhar-tudo">Tocar tudo embaralhado</button>
-      <button type="button" class="menu-item" id="btn-tema">Tema: <span id="rotulo-tema">escuro</span></button>
-      <button type="button" class="menu-item" id="btn-limpar">Esvaziar a biblioteca</button>
-      <!-- Só aparece dentro do aplicativo Android. A tela de bloqueio é
-           feita de peças que só existem lá, e quando uma falha ela falha
-           calada: isto faz o aplicativo dizer em que pé está, em vez de
-           adivinharmos por tentativa. -->
-      <button type="button" class="menu-item" id="btn-diagnostico" hidden>Diagnóstico</button>
+      <button type="button" class="menu-item" id="btn-embaralhar-tudo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h5v5M21 4l-7.5 7.5M3 20l7-7M16 20h5v-5M21 20l-5.5-5.5M3 4l4.5 4.5"/></svg>
+        Tocar tudo embaralhado
+      </button>
+      <button type="button" class="menu-item" id="btn-ordenar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11M4 12h7M4 17h4M17 5v14M17 19l3-3M17 19l-3-3"/></svg>
+        Ordenar por<span class="menu-valor" id="rotulo-ordem">adição</span>
+      </button>
+      <button type="button" class="menu-item" id="btn-nova-lista">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11M4 12h8M4 17h6M17 12v8M13 16h8"/></svg>
+        Criar playlist
+      </button>
+      <button type="button" class="menu-item" id="btn-ajustes">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 4v6M8 14v6"/></svg>
+        Ajustes
+      </button>
+      <button type="button" class="menu-item menu-perigo" id="btn-limpar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>
+        Esvaziar a biblioteca
+      </button>
+      <!-- Só aparece dentro do aplicativo Android. A tela de bloqueio é feita
+           de peças que só existem lá, e quando uma falha ela falha calada. -->
+      <button type="button" class="menu-item" id="btn-diagnostico" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>
+        Diagnóstico
+      </button>
+    </div>
+
+    <!-- busca: some quando a biblioteca está vazia -->
+    <div class="busca" id="busca">
+      <svg class="busca-lupa" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input type="search" id="campo-busca" class="busca-campo" placeholder="Buscar título, artista ou álbum"
+             aria-label="Buscar na biblioteca" autocomplete="off" enterkeyhint="search" spellcheck="false">
+      <button type="button" class="busca-limpar" id="btn-busca-limpar" aria-label="Limpar a busca" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
 
     <nav class="chips" id="chips" aria-label="Filtrar">
-      <button type="button" class="chip" data-filtro="todas"    aria-pressed="true">Todas</button>
-      <button type="button" class="chip" data-filtro="curtidas" aria-pressed="false">Curtidas</button>
-      <button type="button" class="chip" data-filtro="artistas" aria-pressed="false">Por artista</button>
+      <button type="button" class="chip" data-filtro="todas"     aria-pressed="true">Todas</button>
+      <button type="button" class="chip" data-filtro="curtidas"  aria-pressed="false">Curtidas</button>
+      <button type="button" class="chip" data-filtro="artistas"  aria-pressed="false">Por artista</button>
+      <button type="button" class="chip" data-filtro="albuns"    aria-pressed="false">Por álbum</button>
+      <button type="button" class="chip" data-filtro="listas"    aria-pressed="false">Playlists</button>
     </nav>
 
     <ol class="lista" id="lista"></ol>
@@ -85,6 +113,7 @@
 
     <!-- mini player: flutua sobre a lista, dizendo que a música continua -->
     <div class="mini" id="mini" hidden>
+      <div class="mini-trilho" aria-hidden="true"><span class="mini-barra" id="mini-barra"></span></div>
       <button type="button" class="mini-capa" id="mini-abrir" aria-label="Abrir o player">
         <img id="mini-img" alt="">
       </button>
@@ -107,20 +136,39 @@
 
     <header class="cabeca">
       <button type="button" class="redondo" id="btn-voltar" aria-label="Voltar para a biblioteca">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      <h1 class="cabeca-titulo">Tocando agora</h1>
-      <button type="button" class="redondo" id="btn-curtir" aria-label="Curtir" aria-pressed="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true" class="coracao">
-          <path d="M12 20.5S3.5 15 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 5.8-8.5 11.3-8.5 11.3z"/>
-        </svg>
+      <h1 class="cabeca-titulo" id="cabeca-origem">Tocando agora</h1>
+      <button type="button" class="redondo" id="btn-faixa-menu" aria-label="Opções da faixa">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="pontos"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
     </header>
 
-    <div class="bolacha" id="bolacha">
-      <img id="capa-img" alt="" hidden>
-      <div class="bolacha-vazia" id="bolacha-vazia" aria-hidden="true">
-        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" class="d-borda"/><circle cx="50" cy="50" r="30" class="d-sulco"/><circle cx="50" cy="50" r="22" class="d-sulco"/><circle cx="50" cy="50" r="13" class="d-selo"/><circle cx="50" cy="50" r="2.5" class="d-furo"/></svg>
+    <!-- ---- o toca-discos: o prato gira, o braço desce quando toca ---- -->
+    <div class="prato" id="prato">
+      <!-- O eixo fica em x=104: FORA da caixa de 0 a 100, como num
+           toca-discos de verdade, onde o braço nasce ao lado do prato.
+           O SVG não corta (overflow visível no CSS). Parado, a agulha
+           descansa fora do disco; ao tocar ela pousa na borda e vai
+           caminhando para o centro conforme --avanco cresce. -->
+      <svg class="braco" id="braco" viewBox="0 0 100 100" aria-hidden="true">
+        <g class="braco-corpo">
+          <circle class="braco-eixo" cx="104" cy="10" r="6.5"/>
+          <path class="braco-haste" d="M104 10 L99.5 63"/>
+          <path class="braco-cabeca" d="M96.2 62.6 L102.8 62 L103.6 72.4 L97 73 Z"/>
+        </g>
+      </svg>
+
+      <div class="disco" id="disco">
+        <div class="disco-gira" id="disco-gira">
+          <img id="capa-img" alt="" hidden>
+          <div class="bolacha-vazia" id="bolacha-vazia" aria-hidden="true">
+            <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" class="d-borda"/><circle cx="50" cy="50" r="30" class="d-sulco"/><circle cx="50" cy="50" r="22" class="d-sulco"/><circle cx="50" cy="50" r="13" class="d-selo"/><circle cx="50" cy="50" r="2.5" class="d-furo"/></svg>
+          </div>
+          <div class="sulcos" aria-hidden="true"></div>
+        </div>
+        <div class="lustre" aria-hidden="true"></div>
+        <div class="furo" aria-hidden="true"></div>
       </div>
     </div>
 
@@ -129,11 +177,14 @@
       <p class="agora-artista" id="artista">Escolha uma música na biblioteca</p>
     </div>
 
-    <div class="letra" id="letra" aria-live="off">
-      <p class="letra-linha letra-antes"   id="letra-antes"></p>
-      <p class="letra-linha letra-atual"   id="letra-atual"></p>
-      <p class="letra-linha letra-depois"  id="letra-depois"></p>
-    </div>
+    <!-- span e não p: <p> dentro de <button> é HTML inválido. Os
+         navegadores até desenham, mas validador e leitor de tela
+         reclamam, e não custa nada usar a tag certa. -->
+    <button type="button" class="letra" id="letra" aria-label="Abrir a letra inteira">
+      <span class="letra-linha letra-antes"   id="letra-antes"></span>
+      <span class="letra-linha letra-atual"   id="letra-atual"></span>
+      <span class="letra-linha letra-depois"  id="letra-depois"></span>
+    </button>
 
     <div class="progresso">
       <div class="trilho" id="trilho" role="slider" tabindex="0"
@@ -153,8 +204,6 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h5v5M21 4l-7.5 7.5M3 20l7-7M16 20h5v-5M21 20l-5.5-5.5M3 4l4.5 4.5"/></svg>
       </button>
 
-      <!-- barra + triângulo como ÁREA, não como linha: com fill e sem
-           stroke, um traço de largura zero simplesmente não aparece -->
       <button type="button" class="t-btn t-cinza" id="btn-anterior" aria-label="Faixa anterior">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2.6v12H6zM19 6v12l-9.4-6z"/></svg>
       </button>
@@ -168,7 +217,26 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6v12l9.4-6zM15.4 6H18v12h-2.6z"/></svg>
       </button>
 
-      <button type="button" class="t-btn t-plano" id="btn-fila" aria-label="Ver a fila">
+      <button type="button" class="t-btn t-plano" id="btn-repetir" data-modo="tudo" aria-label="Repetir: a fila toda">
+        <svg id="icone-repetir" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l3 3-3 3M20 6H8a4 4 0 0 0-4 4v1M7 21l-3-3 3-3M4 18h12a4 4 0 0 0 4-4v-1"/></svg>
+        <span class="selo-um" id="selo-um" hidden>1</span>
+      </button>
+    </div>
+
+    <div class="rodape-tocando">
+      <button type="button" class="acao-secundaria" id="btn-curtir" aria-pressed="false" aria-label="Curtir">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="coracao">
+          <path d="M12 20.5S3.5 15 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 5.8-8.5 11.3-8.5 11.3z"/>
+        </svg>
+      </button>
+      <button type="button" class="acao-secundaria" id="btn-velocidade" aria-label="Velocidade">
+        <span class="rotulo-velocidade" id="rotulo-velocidade">1x</span>
+      </button>
+      <button type="button" class="acao-secundaria" id="btn-timer" aria-label="Timer para dormir">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>
+        <span class="selo-timer" id="selo-timer" hidden></span>
+      </button>
+      <button type="button" class="acao-secundaria" id="btn-fila" aria-label="Ver a fila">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h12M3 12h12M3 18h8M19 8v9M17 19a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/></svg>
       </button>
     </div>
@@ -176,13 +244,33 @@
 
 </div>
 
+<!-- ================================ FOLHAS ================================= -->
+<!-- Uma folha só, reaproveitada: a fila, a letra, os ajustes, o editor e os
+     menus de faixa moram todos aqui dentro. Um só lugar para o foco, o gesto
+     de fechar e o botão físico de voltar. -->
+<div class="folha-fundo" id="folha-fundo" hidden></div>
+<div class="folha" id="folha" role="dialog" aria-modal="true" aria-labelledby="folha-titulo" hidden>
+  <div class="folha-puxador" id="folha-puxador" aria-hidden="true"><span></span></div>
+  <header class="folha-cabeca">
+    <h2 class="folha-titulo" id="folha-titulo">—</h2>
+    <button type="button" class="redondo" id="folha-fechar" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <div class="folha-corpo" id="folha-corpo"></div>
+</div>
+
 <div class="cortina" id="cortina" hidden aria-hidden="true"><p>Solte para tocar</p></div>
+
+<div class="recado" id="recado" hidden aria-hidden="true"></div>
 
 <!-- só "audio/*": misturar extensões aqui produz um filtro que alguns
      gerenciadores de arquivo do Android não entendem, e o seletor abre
      vazio. A conferência por extensão é feita no JS, que também cobre o
      arrastar-e-soltar no computador. -->
 <input type="file" id="arquivos" accept="audio/*" multiple hidden>
+<input type="file" id="arquivo-capa" accept="image/*" hidden>
+<input type="file" id="arquivo-letra" accept=".lrc,.txt,text/plain" hidden>
 <audio id="som"></audio>
 <p id="aviso" class="sr-only" role="status" aria-live="polite"></p>
 

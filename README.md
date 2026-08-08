@@ -8,7 +8,7 @@ tags:
   - musica
   - javascript
   - design
-atualizado: 2026-08-04
+atualizado: 2026-08-08
 ---
 
 # ◉ Vitrola
@@ -23,18 +23,59 @@ O aplicativo Android roda **inteiro dentro do aparelho** e **não pede permissã
 
 No celular, o navegador oferece instalar na tela inicial. Aí ela abre em tela cheia, funciona sem rede e aparece na folha de compartilhamento junto dos outros aplicativos.
 
-![A biblioteca no tema escuro: capa, título, artista, o lápis para corrigir o nome e o botão de tocar](capturas/biblioteca.png)
+![A biblioteca no tema escuro: busca, filtros por artista e álbum, capa, título, artista e o mini player embaixo](capturas/biblioteca.png)
 
 | Tema claro | Tocando |
 |---|---|
-| ![A mesma biblioteca no tema claro](capturas/claro.png) | ![A tela de reprodução, com a capa e a letra](capturas/tocando.png) |
+| ![A mesma biblioteca no tema claro](capturas/claro.png) | ![A tela de reprodução: o prato girando com a capa, o braço apoiado, título, artista e o transporte](capturas/tocando.png) |
+
+---
+
+## 3.0 — de player a toca-discos
+
+A versão 3.0 é uma reescrita. O aplicativo se chama Vitrola e mostrava **um círculo parado**; agora é um toca-discos que se comporta como um: o prato gira enquanto toca e **para onde estava** quando pausa, um brilho fixo passa por cima do disco em rotação, e o braço desce quando a música começa e **caminha para o miolo** conforme a faixa anda — a posição dele *é* a barra de progresso, dita de outro jeito.
+
+Junto vieram as coisas que faltavam para ser usável com mais de cinquenta músicas:
+
+| Novo | |
+|---|---|
+| **Buscar** | por título, artista ou álbum, sem acento e sem maiúscula (`musica` acha *Música*) |
+| **Fila de verdade** | abre numa folha, mostra em que ponto está, pula para qualquer faixa, limpa o que já passou. Do menu da faixa: *tocar a seguir* e *pôr no fim da fila* |
+| **Playlists** | criar, pôr, tirar — guardadas junto com o resto |
+| **Por álbum** | além de por artista; os dois abrem e voltam |
+| **Ordenar** | por adição, título, artista, álbum, duração ou mais ouvidas — a contagem de escutas é feita aqui e não sai do aparelho |
+| **Editor decente** | título, artista e álbum na mesma folha, trocar a capa e importar letra `.lrc` com marcação de tempo |
+| **A letra inteira** | toca na letra e ela abre; se for sincronizada, tocar numa linha pula a música para aquele ponto |
+| **Equalizador** | 5 bandas com atalhos (Plano, Grave, Voz, Agudo, Noite), volume até 150% e velocidade de 0,75× a 2× **sem alterar o tom** |
+| **Timer para dormir** | 10 a 60 minutos, ou *no fim desta faixa*, com o quanto falta no próprio botão |
+| **Retoma de onde parou** | mesma faixa, mesmo segundo, **pausada** — voltar tocando sozinho ao abrir assusta |
+| **Repetir** | os três estados de verdade; e deslizar no disco troca de faixa |
+
+E o que estava quebrado e ninguém tinha visto:
+
+- **Repetir não existia.** `estado.repetir` estava preso em `'tudo'`; os modos `'uma'` e `'nao'` estavam escritos e eram inalcançáveis, porque não havia botão.
+- **O arranque abria uma sonda por faixa.** Com 300 músicas eram 300 elementos `<audio>` e 300 URLs de objeto criados de uma vez só para descobrir a duração — e a duração nem era guardada, então repetia a cada abertura.
+- **Capa de toda faixa ficava na memória.** Um `createObjectURL` por capa, criado no arranque, nunca devolvido. Agora a URL nasce quando a linha aparece, e as mais antigas são devolvidas.
+- **A fila usava índices.** Como não dava para remover faixa, o problema estava dormindo: no dia em que a remoção entrasse, todo índice guardado passaria a apontar para a vizinha, calado. A fila passou a guardar UID.
+- **"Ver a fila" voltava para a biblioteca** — o botão tinha esse nome e fazia outra coisa.
+- **Renomear era `window.prompt`**: dois diálogos do sistema em sequência, sem álbum e sem como desistir no meio.
+
+O banco sobe da versão 1 para a 2 sozinho e **nada é apagado**: faixas, capas e curtidas que já estão no aparelho continuam lá.
+
+> **A ponte com o Java não mudou.** `Sistema.midia()`, `Sistema.pararMidia()`, `Sistema.tema()`, `Sistema.diagnostico()`, `window.__midia()` e `window.__voltar()` continuam com os mesmos nomes e as mesmas assinaturas — o aplicativo Android recompila sem tocar numa linha de Java.
+
+---
+
+## Os arquivos
 
 | Arquivo | O que é |
 |---|---|
 | [index.html](index.html) | A página |
 | [style.css](style.css) | A aparência — a parte que é o produto |
-| [app.js](app.js) | Tudo o mais, em 10 seções numeradas |
+| [app.js](app.js) | Tudo o mais, em 11 seções numeradas |
+| [sw.js](sw.js) | Service worker: guarda a casca para abrir sem rede |
 | [testes/testar.js](testes/testar.js) | Carrega o `app.js` num DOM falso e testa a lógica pura |
+| [android/](android/) | O aplicativo Android — as fontes Java e como recompilar |
 
 ---
 
@@ -90,11 +131,17 @@ A matiz nunca é tocada. Só a luminosidade. O amarelo continua amarelo:
 |---|---|---|
 | amarelo `l=0.60` | `l=0.24` — 4,6:1 | `l=0.60` — 14,5:1 |
 
-### A onda é a barra de progresso
+### O prato é a barra de progresso
 
-Não é desenho decorativo. A faixa é decodificada e reduzida a mil picos reais de amplitude, e é isso que você vê e arrasta. A decodificação acontece **depois** do play começar — a música nunca espera pelo desenho.
+O disco não é enfeite. Ele **gira enquanto toca e para onde estava** quando você pausa, como um prato de verdade — não volta ao começo. Um brilho fixo passa por cima do que gira, e é esse brilho que faz a rotação parecer física em vez de um GIF: sem uma luz parada, um círculo girando não tem como provar que está girando. Os sulcos são anéis finos por cima da capa, no que gira.
 
-Ela é decodificada num `OfflineAudioContext` descartável, de propósito: usar o contexto de reprodução ali seria uma armadilha, porque ele nasceria fora de um clique, e um `AudioContext` suspenso com o `<audio>` ligado nele **toca em silêncio**.
+O braço desce quando a música começa e caminha para o miolo conforme a faixa anda. Ele **é** o progresso, dito de outro jeito — a barra continua ali embaixo para quem quiser o número.
+
+Quem não quiser o giro desliga nos ajustes, e quem tem *reduzir movimento* ligado no sistema já recebe tudo parado.
+
+Na lista, a faixa que toca ganhou **três barrinhas dançando sobre a capa**, que param quando a música para: dá para ver o que está tocando sem depender só de cor.
+
+> Até a 2.x isto era uma **onda** — mil picos de amplitude decodificados num `OfflineAudioContext` descartável. Bonito, e caro: decodificar o arquivo inteiro para desenhar uma barra. O prato conta a mesma coisa (onde está, quanto falta) usando o que o aplicativo já é.
 
 ### A tela de bloqueio, e por que ela precisou de duas implementações
 
@@ -125,7 +172,7 @@ O relatório junta o que só o Java sabe (permissão, serviço, sessão, versão
 
 ### Consertar o nome na mão
 
-Etiqueta de MP3 mente. O botão de lápis em cada faixa abre um campo para corrigir título e artista, e a correção fica valendo depois de fechar o aplicativo.
+Etiqueta de MP3 mente. O menu de cada faixa abre um editor com **título, artista e álbum na mesma folha** — e explica para que serve, porque quem tem etiqueta com os quadradinhos `██` não sabe que aquilo tem conserto. Também dá para trocar a capa e importar a letra de um `.lrc`. A correção fica valendo depois de fechar o aplicativo.
 
 Antes de precisar dele, o leitor tenta sozinho: **o embaralhamento mais comum não deixa losango nenhum.** Um arquivo gravado em UTF-8 mas etiquetado como latin1 vira `AÃ§Ã£o` — todo caractere imprimível, nada que um contador de caracteres estranhos ache errado. Só o olho humano vê. Então esse caso é pego por outra pergunta: *os bytes formam UTF-8 válido?* Texto latin1 de verdade quase nunca passa nesse teste por acaso — as sequências de vários bytes do UTF-8 são exigentes demais para sair por acidente.
 
@@ -137,7 +184,7 @@ Vitrola é um **PWA**: instala na tela inicial, abre em tela cheia sem barra de 
 |---|---|
 | **Instalar** | Android: o botão *Instalar* aparece sozinho na barra de cima. iOS: Safari → Compartilhar → *Adicionar à Tela de Início* |
 | **Sem rede** | O service worker guarda a casca inteira. Depois da primeira visita, abre no avião |
-| **Compartilhar para a Vitrola** | No Android ela aparece na folha de compartilhamento de qualquer app. O service worker recebe o POST, guarda os arquivos e a página os recolhe |
+| **Compartilhar para a Vitrola** | ⚠️ **Pela metade.** No Android ela aparece na folha de compartilhamento e o service worker recebe o POST e guarda os arquivos — mas **a página ainda não os recolhe**. Quem compartilha um áudio hoje vê o app abrir e não encontra a música |
 | **Abrir com** | Com o app instalado, tocar num arquivo de áudio pode abrir a Vitrola direto |
 | **Tela de bloqueio** | Capa, título, artista e os controles do sistema, pela Media Session |
 | **Áreas seguras** | `env(safe-area-inset-*)` no padding — instalado no iOS o conteúdo passaria por baixo do relógio |
@@ -154,13 +201,14 @@ Duas decisões de produto que valem dizer:
 
 ### Some mais
 
-- **A fila sobrevive ao recarregar** — os arquivos ficam no IndexedDB do navegador
-- Corrigir título e artista na mão, pelo lápis de cada faixa
+- **A biblioteca sobrevive ao fechar** — os arquivos ficam no IndexedDB, e a sessão retoma na mesma faixa e no mesmo segundo, pausada
 - Arrastar e soltar em qualquer lugar da página
-- Tema claro e escuro, com preferência do sistema respeitada e botão que vence nos dois sentidos
-- Aleatório, repetir tudo, repetir uma
-- Teclado inteiro: <kbd>espaço</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>S</kbd> <kbd>R</kbd> <kbd>M</kbd>
-- Espectro ao vivo pelo `AnalyserNode`, em escala logarítmica — que é a que corresponde ao que o ouvido percebe
+- Três temas: escuro, claro e **do sistema**
+- Aleatório, e repetir com os três estados
+- Folhas que sobem de baixo e fecham arrastando; recado visível quando algo acontece
+- Tela de 660px de altura ou menos encolhe o disco e esconde a letra, em vez de espremer tudo
+- Teclado: <kbd>espaço</kbd>/<kbd>K</kbd> tocar · <kbd>←</kbd> <kbd>→</kbd> pular · <kbd>S</kbd> aleatório · <kbd>R</kbd> repetir · <kbd>L</kbd> curtir · <kbd>Q</kbd> fila · <kbd>/</kbd> buscar · <kbd>Esc</kbd> voltar
+- O brilho do fundo é a própria capa ampliada e desfocada, com um pulso que respira nos graves pelo `AnalyserNode`
 
 ---
 
@@ -184,13 +232,15 @@ node testes/testar.js
 | UTF-8 etiquetado como latin1 é desembaralhado, e latin1 de verdade não | ✅ 10/10 |
 | A ponte da tela de bloqueio: milissegundos, freio, `NaN`, comando desconhecido | ✅ 15/15 |
 
-E o botão de lápis, medido no Chrome de verdade em vez de deduzido: alvo de 44×44, alcança o teclado, e clicar nele **não** dispara a música da linha.
+E num Chrome de verdade, com quatro MP3 de etiqueta e capa entregues pelo seletor: a biblioteca enche, a cor da capa tinge o fundo, o menu abre, o disco gira, o braço desce — **sem um erro de console, de página ou de rede**. As capturas deste README saem dessa mesma corrida, e não de um retoque.
 
-**Não verificado:** som, o desenho da onda e do espectro, o card na tela de bloqueio de um aparelho real e o toque. Isso só olhando — e o aparelho é seu.
+**Não verificado:** som, o card na tela de bloqueio de um aparelho real, o toque e o deslizar no disco. Isso só olhando — e o aparelho é seu.
 
 ---
 
 ## Onde mexer
+
+O `app.js` está em 11 seções numeradas: 1 utilidades · 2 leitor de ID3 · 3 cor da capa · 4 guarda (IndexedDB) · 5 biblioteca e fila · 6 áudio e equalizador · 7 brilho e pulso · 8 Media Session e ponte Android · 9 desenho da tela · 10 folhas · 11 entrada e arranque.
 
 | Quero… | Vá em |
 |---|---|
@@ -198,7 +248,10 @@ E o botão de lápis, medido no Chrome de verdade em vez de deduzido: alvo de 44
 | Mudar o alvo de contraste | `ALVO_CONTRASTE`, seção 3 |
 | Mudar como a cor dominante é escolhida | `corDaImagem()`, seção 3 |
 | Suportar mais quadros de ID3 | o mapa `CAMPO`, seção 2 |
-| Mudar o desenho da onda ou do espectro | seção 7 |
+| Mexer no prato, no braço ou nos sulcos | `.prato` e `.braco`, no `style.css` |
+| Mudar as bandas do equalizador | `EQ_HZ` e `EQ_PADROES`, seção 6 |
+| Mudar o brilho de fundo e o pulso dos graves | seção 7 |
+| **Publicar uma versão nova** | ⚠️ trocar `VERSAO` no `sw.js`. A estratégia é cache-primeiro: sem trocar esse texto, quem já tem o app instalado nunca vê a versão nova |
 
 ---
 

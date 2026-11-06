@@ -28,3 +28,9 @@ desktop.ini
 # Nada é instalado neste projeto — mas se um dia for
 node_modules/
 *.log
+
+# Build do app Android e cache do Python
+__pycache__/
+*.pyc
+.gradle/
+build/

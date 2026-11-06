@@ -12,7 +12,8 @@ import math, os, shutil, struct, zlib
 RAIZ   = os.path.join(os.environ["USERPROFILE"], ".bubblewrap")
 BASE   = os.path.join(RAIZ, "vitrola-apk")        # de onde vem o wrapper do gradle
 OBRA   = os.path.join(RAIZ, "vitrola-local")
-WEB    = r"B:\Projeto 9 Claude Mestre Neutro\10-projetos\vitrola"
+# android/ -> vitrola/ : derivado do proprio arquivo, nao cravado num disco
+WEB    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACOTE = "io.github.skotalexsander.vitrola"
 
 shutil.rmtree(OBRA, ignore_errors=True)
